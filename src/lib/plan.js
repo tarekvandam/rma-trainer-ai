@@ -330,7 +330,8 @@ export async function syncRequestsCloud() {
     const merged = {}
     local.forEach(r => { merged[r.email] = { ...r, _source: 'local' } })
     cloud.forEach(r => {
-      if (deleted.includes(r.email)) return // don't restore deleted
+      // Skip only old revoked entries that were deleted — allow newer pending/approved
+      if (deleted.includes(r.email) && r.status === 'revoked') return
       if (!merged[r.email]) {
         merged[r.email] = { ...r, _source: 'cloud' }
       } else {
@@ -382,6 +383,10 @@ export async function deleteRequest(email) {
 }
 
 export async function submitProRequest(userData) {
+  // If this email was previously deleted, clear it so sync doesn't hide the new request
+  const deleted = getDeletedEmails().filter(e => e !== userData.email)
+  localStorage.setItem(DELETED_KEY, JSON.stringify(deleted))
+
   const requests = await getRequests()
   const existing = requests.find(r => r.email === userData.email)
   if (existing && existing.status === 'pending') return { error: 'عندك طلب مقدم بالفعل' }
