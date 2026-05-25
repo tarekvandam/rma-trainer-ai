@@ -470,6 +470,13 @@ export default function Admin() {
             </button>
           </form>
           {videos.length === 0 && <p className="text-center text-sm text-zinc-500">ما في فيديوهات مضافة</p>}
+          <div className="flex justify-end">
+            {videos.length > 0 && (
+              <button onClick={() => { setVideos([]); saveVideosCloud([]) }} className="cursor-pointer rounded-lg bg-red-700/50 px-3 py-1.5 text-xs text-red-300 transition hover:bg-red-700">
+                مسح الكل
+              </button>
+            )}
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             {videos.map((v, i) => (
               <div key={i} className="group relative overflow-hidden rounded-lg">
@@ -482,9 +489,9 @@ export default function Admin() {
                 />
                 <button
                   onClick={() => deleteVideo(i)}
-                  className="absolute top-2 right-2 hidden cursor-pointer rounded bg-red-600/80 px-2 py-1 text-xs text-white group-hover:block"
+                  className="absolute top-2 right-2 cursor-pointer rounded bg-red-600/80 px-2 py-1 text-xs text-white transition hover:bg-red-600"
                 >
-                  مسح
+                  ✕
                 </button>
               </div>
             ))}
