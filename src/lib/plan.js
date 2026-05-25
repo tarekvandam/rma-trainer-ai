@@ -414,14 +414,6 @@ export async function revokeSubscription(email) {
     req.status = 'revoked'
     req.revokedAt = new Date().toISOString()
     await saveRequests(requests)
-    const plan = getPlan()
-    if (plan.type === 'pro') {
-      plan.type = 'free'
-      delete plan.expiresAt
-      delete plan.activatedAt
-      plan.revoked = true
-      localStorage.setItem(PLAN_KEY, JSON.stringify(plan))
-    }
   }
 }
 
@@ -431,6 +423,10 @@ export function getProfile(email) {
   } catch {
     return {}
   }
+}
+
+export function getActiveProUsers() {
+  return getRequestsLocal().filter(r => r.status === 'approved')
 }
 
 export function saveProfile(email, data) {

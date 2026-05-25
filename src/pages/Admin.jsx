@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getRequests, getRequestsLocal, approveRequest, rejectRequest, submitProRequest, revokeSubscription, deleteRequest, syncCodesToCloud, loadPublicCodes, syncRequestsCloud, clearUnusedCodes } from '../lib/plan'
+import { getRequests, getRequestsLocal, approveRequest, rejectRequest, submitProRequest, revokeSubscription, deleteRequest, syncCodesToCloud, loadPublicCodes, syncRequestsCloud, clearUnusedCodes, getActiveProUsers } from '../lib/plan'
 import { publishPricingPlans } from '../lib/pricing-sync'
 
 async function fetchCodesWithSupabase() {
@@ -331,21 +331,50 @@ export default function Admin() {
       </div>
 
       {activeTab === 'dashboard' && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: 'إجمالي الأكواد', value: stats.totalCodes.toLocaleString(), color: 'text-white' },
-            { label: 'المفعلة', value: stats.usedCodes.toLocaleString(), color: 'text-green-400' },
-            { label: 'المتبقية', value: stats.availableCodes.toLocaleString(), color: 'text-rmared-500' },
-            { label: 'الفيديوهات', value: stats.totalVideos, color: 'text-blue-400' },
-            { label: 'طلبات معلقة', value: stats.pendingRequests.toString(), color: 'text-yellow-400' },
-            { label: 'خطط مخصصة', value: plans.length.toString(), color: 'text-purple-400' },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 text-center">
-              <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
-              <div className="mt-1 text-sm text-zinc-400">{stat.label}</div>
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: 'إجمالي الأكواد', value: stats.totalCodes.toLocaleString(), color: 'text-white' },
+              { label: 'المفعلة من الأكواد', value: stats.usedCodes.toLocaleString(), color: 'text-green-400' },
+              { label: 'المتبقية من الأكواد', value: stats.availableCodes.toLocaleString(), color: 'text-rmared-500' },
+              { label: 'الفيديوهات', value: stats.totalVideos, color: 'text-blue-400' },
+              { label: 'طلبات معلقة', value: stats.pendingRequests.toString(), color: 'text-yellow-400' },
+              { label: 'خطط مخصصة', value: plans.length.toString(), color: 'text-purple-400' },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 text-center">
+                <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
+                <div className="mt-1 text-sm text-zinc-400">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+            <h2 className="mb-3 text-lg font-bold text-green-400">مشتركين Pro النشطين</h2>
+            {getActiveProUsers().length === 0 ? (
+              <p className="text-sm text-zinc-500">ما في مشتركين Pro حالياً</p>
+            ) : (
+              <div className="space-y-2">
+                {getActiveProUsers().map((r, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/50 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-zinc-200">{r.email}</p>
+                      <p className="text-xs text-zinc-500">
+                        {r.code ? `كود: ${r.code} | ` : ''}
+                        {r.expiresAt ? `ينتهي: ${new Date(r.expiresAt).toLocaleDateString('ar-EG')} (${Math.ceil((new Date(r.expiresAt) - new Date()) / (1000*60*60*24))} يوم)` : ''}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { if (confirm(`إلغاء اشتراك ${r.email}؟`)) { revokeSubscription(r.email).then(() => refreshRequests()) } }}
+                      className="cursor-pointer rounded-lg bg-red-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                    >
+                      إلغاء الاشتراك
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {activeTab === 'codes' && (
