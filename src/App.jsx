@@ -13,6 +13,7 @@ import Payment from './pages/Payment'
 import Dashboard from './pages/Dashboard'
 import AdminLogin from './pages/AdminLogin'
 import Admin from './pages/Admin'
+import Revoke from './pages/Revoke'
 
 export default function App() {
   useEffect(() => {
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<AdminLogin />} />
             <Route path="/admin/panel" element={<Admin />} />
+            <Route path="/revoke" element={<Revoke />} />
           </Route>
         </Routes>
       </AuthProvider>
