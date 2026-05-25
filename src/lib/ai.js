@@ -42,7 +42,7 @@ export async function generateWorkoutPlan(formData) {
   const goalText = { fat_loss: 'حرق دهون', muscle_gain: 'بناء عضلات', endurance: 'تحمل قتالي', strength: 'قوة', general: 'لياقة عامة' }
   const levelText = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }
   const equipText = { none: 'بدون أجهزة (bodyweight فقط)', dumbbells: 'دمبلز', barbell: 'بار ودمبلز', kettlebell: 'كيتبل بيل', resistance_bands: 'أشرطة مقاومة', pullup_bar: 'بار عقلة ودمبلز', full_gym: 'جيم كامل (كل الأجهزة)' }
-  const typeText = { mma: 'MMA', boxing: 'ملاكمة', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', wrestling: 'مصارعة', general: 'لياقة عامة' }
+  const typeText = { mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', general: 'لياقة عامة' }
 
   const userPrompt = `اصنع خطة تدريب شخصية جدا للشخص التالي:
 - الاسم: ${name || 'مستخدم'}
@@ -219,6 +219,14 @@ function getFallbackPlan(form) {
         { name: 'ضغط انفجاري + نط', duration: 10 },
         { name: 'ظل سرعة (4 جولات)', duration: 8 },
       ],
+      kickboxing: [
+        { name: 'ظل كيك بوكس (3 جولات)', duration: 9 },
+        { name: 'نط حبل + ركلات', duration: 10 },
+        { name: 'ركلات متعددة الاتجاهات', duration: 8 },
+        { name: 'لكمات + ركلات مركبة', duration: 10 },
+        { name: 'HIIT كيك بوكس', duration: 10 },
+        { name: 'ظل قتال سريع', duration: 9 },
+      ],
       bjj: [
         { name: 'تمارين أرضية زحف', duration: 10 },
         { name: 'جري', duration: 15 },
@@ -234,6 +242,22 @@ function getFallbackPlan(form) {
         { name: 'ظل ركلات سريع', duration: 8 },
         { name: 'تبديل رجلين سريع', duration: 10 },
         { name: 'ركلات مركبة + نط', duration: 10 },
+      ],
+      taekwondo: [
+        { name: 'تمارين ركلات سريعة', duration: 10 },
+        { name: 'ظل تاي كون دو (3 جولات)', duration: 8 },
+        { name: 'نط حبل + ركلات عالية', duration: 10 },
+        { name: 'حركات قدم انفجارية', duration: 8 },
+        { name: 'تمارين مرونة + ركلات', duration: 10 },
+        { name: 'قفز انفجاري + ركلات', duration: 8 },
+      ],
+      karate: [
+        { name: 'ظل كاراتيه (3 جولات)', duration: 9 },
+        { name: 'تمارين انفجارية', duration: 10 },
+        { name: 'حركات أساسية متكررة', duration: 10 },
+        { name: 'لكمات سريعة + حركات قدم', duration: 8 },
+        { name: 'نط حبل', duration: 10 },
+        { name: 'تمارين كاتا سريعة', duration: 9 },
       ],
       wrestling: [
         { name: 'سباقات انفجارية', duration: 5 },
@@ -274,8 +298,11 @@ function getFallbackPlan(form) {
   const typeFocus = {
     mma: { d1: 'حركات انفجارية + قوة', d2: 'تحمل + كارديو', d3: 'قوة أساسية + قلب', d4: 'حركات MMA وظيفية', d5: 'قوة + كارديو', d6: 'تحمل عالي' },
     boxing: { d1: 'صدر + كتف + ترايسبس', d2: 'ظهر + بايسبس + قلب', d3: 'أرجل + كارديو', d4: 'كتف + ترايسبس + سرعة', d5: 'قوة كاملة', d6: 'كارديو + تحمل' },
+    kickboxing: { d1: 'لكمات + ركلات أساسية', d2: 'أرجل + تحمل', d3: 'قوة انفجارية', d4: 'ركلات مركبة', d5: 'لكمات سرعة', d6: 'كارديو كيك بوكس' },
     bjj: { d1: 'سحب + قلب', d2: 'أرجل + تحمل', d3: 'قوة كاملة', d4: 'حركات أرضية', d5: 'سحب + أرجل', d6: 'كارديو + تحمل' },
     muay_thai: { d1: 'أرجل + كارديو', d2: 'دفع + كتف', d3: 'سحب + قلب', d4: 'كارديو + ركلات', d5: 'قوة كاملة', d6: 'تحمل عالي' },
+    taekwondo: { d1: 'ركلات عالية + مرونة', d2: 'أرجل + انفجار', d3: 'قوة انفجارية', d4: 'ركلات سريعة', d5: 'تحمل + ركلات', d6: 'كارديو تاي كون دو' },
+    karate: { d1: 'لكمات أساسية + وقفات', d2: 'كاتا + حركات', d3: 'قوة انفجارية', d4: 'ركلات + لكمات', d5: 'سرعة + دقة', d6: 'تحمل كاراتيه' },
     wrestling: { d1: 'قوة كاملة', d2: 'انفجار + أرجل', d3: 'سحب + قلب', d4: 'قوة + تحمل', d5: 'أرجل + كارديو', d6: 'كارديو عالي' },
     general: { d1: 'دفع', d2: 'سحب', d3: 'أرجل', d4: 'أعلى جسم', d5: 'أسفل + قلب', d6: 'كارديو' },
   }
@@ -327,7 +354,7 @@ function getFallbackPlan(form) {
     bmr: `${bmr} سعرة/يوم`,
     dailyCalories: `${dailyCalories} سعرة/يوم`,
     protein: `${protein} جرام/يوم`,
-    trainingType: { mma: 'MMA', boxing: 'ملاكمة', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', wrestling: 'مصارعة', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة',
+    trainingType: { mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة',
     tips: [
       'الإحماء 10 د قبل كل تمرين — حركات ديناميكية مش ثابتة',
       'الفورم قبل الوزن — إصابة اليوم تدمر شهور من التقدم',

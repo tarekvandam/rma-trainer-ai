@@ -10,7 +10,7 @@ const C = {
 const FONT = 'Tahoma, "Segoe UI", Arial, sans-serif'
 const LVL = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }
 const GOL = { fat_loss: 'حرق دهون', muscle_gain: 'تضخيم', endurance: 'تحمل', strength: 'قوة', general: 'لياقة عامة' }
-const TYP = { mma: 'MMA', boxing: 'ملاكمة', bjj: 'BJJ', muay_thai: 'مواي تاي', wrestling: 'مصارعة', general: 'لياقة عامة' }
+const TYP = { mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'BJJ', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', general: 'لياقة عامة' }
 
 export default function PdfExport({ form, result }) {
   const [loading, setLoading] = useState(false)

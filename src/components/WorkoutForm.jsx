@@ -27,8 +27,11 @@ const equipmentList = [
 const trainingTypes = [
   { value: 'mma', label: 'MMA' },
   { value: 'boxing', label: 'ملاكمة' },
+  { value: 'kickboxing', label: 'كيك بوكس' },
   { value: 'bjj', label: 'جيوجيتسو' },
   { value: 'muay_thai', label: 'مواي تاي' },
+  { value: 'taekwondo', label: 'تاي كون دو' },
+  { value: 'karate', label: 'كاراتيه' },
   { value: 'wrestling', label: 'مصارعة' },
   { value: 'general', label: 'عام' },
 ]
