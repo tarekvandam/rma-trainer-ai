@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-rmared-50: #fef2f2;
+  --color-rmared-100: #fee2e2;
+  --color-rmared-200: #fecaca;
+  --color-rmared-300: #fca5a5;
+  --color-rmared-400: #f87171;
+  --color-rmared-500: #dc2626;
+  --color-rmared-600: #b91c1c;
+  --color-rmared-700: #991b1b;
+  --color-rmared-800: #7f1d1d;
+  --color-rmared-900: #450a0a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[dir="rtl"] {
+  text-align: right;
+}
+
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.card-glow {
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.1);
+}
