@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getLocalSession, localSignOut } from '../lib/auth'
-import { getRequestStatus, getPlan, activatePro, getProfile, saveProfile, daysRemaining } from '../lib/plan'
+import { getRequestStatus, getPlan, activatePro, getProfile, saveProfile, daysRemaining, syncVideosCloud } from '../lib/plan'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -9,9 +9,7 @@ export default function Dashboard() {
   const [status, setStatus] = useState(null)
   const [profile, setProfile] = useState({ name: '', phone: '', goal: '' })
   const [saved, setSaved] = useState(false)
-  const [videos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rma_videos')) || [] } catch { return [] }
-  })
+  const [videos, setVideos] = useState([])
 
   useEffect(() => {
     ;(async () => {
@@ -36,6 +34,14 @@ export default function Dashboard() {
       setProfile(getProfile(s.email))
     })()
   }, [navigate])
+
+  useEffect(() => {
+    ;(async () => {
+      const cloud = await syncVideosCloud()
+      if (cloud) setVideos(cloud)
+      else setVideos(() => { try { return JSON.parse(localStorage.getItem('rma_videos')) || [] } catch { return [] } })
+    })()
+  }, [])
 
   const handleSave = (e) => {
     e.preventDefault()

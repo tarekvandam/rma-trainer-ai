@@ -488,6 +488,26 @@ export function saveProfile(email, data) {
   localStorage.setItem('rma_profile_' + email, JSON.stringify(data))
 }
 
+// Video sync with Supabase
+const VIDEOS_KEY = 'rma_videos'
+
+export async function saveVideosCloud(videos) {
+  localStorage.setItem(VIDEOS_KEY, JSON.stringify(videos))
+  const clean = videos.map(v => ({ id: v.id, url: v.url, date: v.date }))
+  await supabaseSet('rma_videos', clean)
+}
+
+export async function syncVideosCloud() {
+  try {
+    const cloud = await supabaseGet('rma_videos')
+    if (!cloud || !Array.isArray(cloud)) return
+    localStorage.setItem(VIDEOS_KEY, JSON.stringify(cloud))
+    return cloud
+  } catch {
+    return null
+  }
+}
+
 export function checkAllExpired() {
   const plan = getPlan() // triggers expiry check
   // Also check all stored users for expiry

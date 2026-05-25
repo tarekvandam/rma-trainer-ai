@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getRequests, getRequestsLocal, approveRequest, rejectRequest, submitProRequest, revokeSubscription, deleteRequest, syncCodesToCloud, loadPublicCodes, syncRequestsCloud, clearUnusedCodes, getActiveProUsers } from '../lib/plan'
+import { getRequests, getRequestsLocal, approveRequest, rejectRequest, submitProRequest, revokeSubscription, deleteRequest, syncCodesToCloud, loadPublicCodes, syncRequestsCloud, clearUnusedCodes, getActiveProUsers, saveVideosCloud } from '../lib/plan'
 import { publishPricingPlans } from '../lib/pricing-sync'
 
 async function fetchCodesWithSupabase() {
@@ -192,13 +192,17 @@ export default function Admin() {
     if (!videoUrl) return
     const id = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)?.[1]
     if (id) {
-      setVideos([{ id, url: videoUrl, date: new Date().toISOString() }, ...videos])
+      const updated = [{ id, url: videoUrl, date: new Date().toISOString() }, ...videos]
+      setVideos(updated)
+      saveVideosCloud(updated)
       setVideoUrl('')
     }
   }
 
   const deleteVideo = (idx) => {
-    setVideos(videos.filter((_, i) => i !== idx))
+    const updated = videos.filter((_, i) => i !== idx)
+    setVideos(updated)
+    saveVideosCloud(updated)
   }
 
   const handleApprove = async (email) => {
