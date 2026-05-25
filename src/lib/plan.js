@@ -361,10 +361,24 @@ async function saveRequests(requests) {
 }
 
 export async function deleteRequest(email) {
+  // First mark as revoked in Supabase so user's polling can detect it
+  try {
+    const cloud = await supabaseGet('pro_requests')
+    if (Array.isArray(cloud)) {
+      const found = cloud.find(r => r.email === email)
+      if (found) {
+        found.status = 'revoked'
+        found.revokedAt = new Date().toISOString()
+      }
+      await supabaseSet('pro_requests', cloud)
+    }
+  } catch { /* ignore */ }
+
+  // Then remove from local storage only
   const requests = getRequestsLocal()
   const filtered = requests.filter(r => r.email !== email)
   addDeletedEmail(email)
-  await saveRequests(filtered)
+  localStorage.setItem(REQUESTS_KEY, JSON.stringify(filtered))
 }
 
 export async function submitProRequest(userData) {
@@ -428,13 +442,29 @@ export async function rejectRequest(email) {
 }
 
 export async function revokeSubscription(email) {
-  const requests = await getRequests()
-  const req = requests.find(r => r.email === email)
-  if (req) {
-    req.status = 'revoked'
-    req.revokedAt = new Date().toISOString()
-    await saveRequests(requests)
+  // Write revoked status directly to Supabase regardless of local state
+  try {
+    const cloud = await supabaseGet('pro_requests')
+    if (Array.isArray(cloud)) {
+      const found = cloud.find(r => r.email === email)
+      if (found) {
+        found.status = 'revoked'
+        found.revokedAt = new Date().toISOString()
+      } else {
+        cloud.push({ email, status: 'revoked', revokedAt: new Date().toISOString(), createdAt: new Date().toISOString() })
+      }
+      await supabaseSet('pro_requests', cloud)
+    }
+  } catch { /* ignore */ }
+
+  // Also update local
+  const local = getRequestsLocal()
+  const found = local.find(r => r.email === email)
+  if (found) {
+    found.status = 'revoked'
+    found.revokedAt = new Date().toISOString()
   }
+  localStorage.setItem(REQUESTS_KEY, JSON.stringify(local))
 }
 
 export function getProfile(email) {
