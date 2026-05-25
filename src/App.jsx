@@ -24,7 +24,6 @@ export default function App() {
       const session = getLocalSession()
       if (!session) return
       const plan = getPlan()
-      await syncRequestsCloud()
       const status = await getRequestStatus(session.email)
       if (status === 'approved' && plan.type !== 'pro') {
         await activatePro('approved')

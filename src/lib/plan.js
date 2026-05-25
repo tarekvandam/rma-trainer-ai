@@ -381,7 +381,27 @@ export async function submitProRequest(userData) {
 }
 
 export async function getRequestStatus(email) {
-  const requests = await getRequests()
+  // First check Supabase directly for latest status
+  try {
+    const cloud = await supabaseGet('pro_requests')
+    if (Array.isArray(cloud)) {
+      const found = cloud.find(r => r.email === email)
+      if (found) {
+        // Update local cache with fresh Supabase data
+        const local = getRequestsLocal()
+        const idx = local.findIndex(r => r.email === email)
+        if (idx >= 0) {
+          local[idx] = found
+        } else {
+          local.push(found)
+        }
+        localStorage.setItem(REQUESTS_KEY, JSON.stringify(local))
+        return found.status
+      }
+    }
+  } catch { /* fallback to local */ }
+
+  const requests = getRequestsLocal()
   const req = requests.find(r => r.email === email)
   return req ? req.status : null
 }
