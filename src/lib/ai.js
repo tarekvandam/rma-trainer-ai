@@ -147,7 +147,32 @@ The plan must be complete and ready to execute from day one.`
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON')
 
-    return JSON.parse(jsonMatch[0])
+    const parsed = JSON.parse(jsonMatch[0])
+    // Sanitize: replace Arabic day/name patterns if English UI
+    if (lang === 'en' && parsed?.days) {
+      const arDayMap = {
+        'اليوم الأول': 'Day One', 'اليوم الثاني': 'Day Two', 'اليوم الثالث': 'Day Three',
+        'اليوم الرابع': 'Day Four', 'اليوم الخامس': 'Day Five', 'اليوم السادس': 'Day Six',
+        'الأول': 'One', 'الثاني': 'Two', 'الثالث': 'Three', 'الرابع': 'Four',
+        'الخامس': 'Five', 'السادس': 'Six',
+      }
+      parsed.days.forEach(day => {
+        if (day.day) Object.entries(arDayMap).forEach(([ar, en]) => { day.day = day.day.replaceAll(ar, en) })
+        if (day.focus) {
+          day.focus = day.focus.replace(/صدر/g, 'Chest').replace(/كتف/g, 'Shoulders').replace(/ترايسبس/g, 'Triceps')
+            .replace(/بايسبس/g, 'Biceps').replace(/ظهر/g, 'Back').replace(/قلب/g, 'Core').replace(/أرجل/g, 'Legs')
+            .replace(/قوة/g, 'Strength').replace(/تحمل/g, 'Endurance').replace(/كارديو/g, 'Cardio')
+            .replace(/انفجار/g, 'Explosive').replace(/سحب/g, 'Pull').replace(/دفع/g, 'Push')
+            .replace(/سرعة/g, 'Speed').replace(/ركلات/g, 'Kicks').replace(/لكمات/g, 'Punches')
+            .replace(/مرونة/g, 'Flexibility').replace(/حركات/g, 'Movements').replace(/كاتا/g, 'Kata')
+            .replace(/أساسية/g, 'Basic').replace(/دقة/g, 'Precision').replace(/متوازنة/g, 'Balanced')
+            .replace(/وظيفية/g, 'Functional').replace(/عالية/g, 'High').replace(/عالي/g, 'High')
+            .replace(/أساسي/g, 'Basic').replace(/كاملة/g, 'Full').replace(/كامل/g, 'Full')
+            .replace(/أرضي/g, 'Ground').replace(/أرضية/g, 'Ground')
+        }
+      })
+    }
+    return parsed
   } catch (err) {
     console.error('AI failed, using personalized fallback:', err)
     return getFallbackPlan(formData, lang)
