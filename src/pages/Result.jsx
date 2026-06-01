@@ -12,8 +12,8 @@ export default function Result() {
     return (
       <div className="animate-fade-in flex flex-col items-center gap-4 pt-16 text-center">
         <div className="text-6xl">🤷</div>
-        <p className="text-zinc-400">ما في خطة للعرض. ارجع واطلع على خطة جديدة.</p>
-        <Link to="/generator" className="text-rmared-500 underline">رجّع للمولد</Link>
+        <p className="text-zinc-400">{t('res_no_plan')}</p>
+        <Link to="/generator" className="text-rmared-500 underline">{t('res_back_gen')}</Link>
       </div>
     )
   }
@@ -22,7 +22,7 @@ export default function Result() {
     <div className="animate-fade-in space-y-6" id="workout-result">
       <div className="text-center">
         <h1 className="text-2xl font-bold md:text-3xl">{t('res_title')} 🥋</h1>
-        <p className="mt-1 text-zinc-400">{form?.name ? `خاصة بـ ${form.name}` : ''}</p>
+        <p className="mt-1 text-zinc-400">{form?.name ? `${t('res_for')} ${form.name}` : ''}</p>
       </div>
 
       <div className="card-glow space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
@@ -36,7 +36,7 @@ export default function Result() {
 
       {result.bmr && (
         <div className="card-glow rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
-          <h2 className="mb-3 text-lg font-bold text-rmared-500">حساباتك الشخصية</h2>
+          <h2 className="mb-3 text-lg font-bold text-rmared-500">{t('res_personal')}</h2>
           <div className="grid gap-3 text-sm md:grid-cols-3">
             <InfoRow label={`${t('res_bmr')} (BMR)`} value={result.bmr} />
             <InfoRow label={t('res_calories')} value={result.dailyCalories} />

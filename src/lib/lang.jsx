@@ -420,6 +420,11 @@ const ar = {
   err_required: 'مطلوب',
   err_invalid: 'غير صحيح',
   err_network: 'خطأ في الشبكة',
+  // Result extra
+  res_no_plan: 'ما في خطة للعرض. ارجع واطلع على خطة جديدة.',
+  res_back_gen: 'رجّع للمولد',
+  res_for: 'خاصة بـ',
+  res_personal: 'حساباتك الشخصية',
 }
 
 const en = {
@@ -813,6 +818,10 @@ const en = {
   err_required: 'Required',
   err_invalid: 'Invalid',
   err_network: 'Network error',
+  res_no_plan: 'No plan to display. Go back and generate a new one.',
+  res_back_gen: 'Back to Generator',
+  res_for: 'For',
+  res_personal: 'Your Personal Stats',
 }
 
 const dict = { ar, en }

@@ -7,7 +7,7 @@ import { canGeneratePlan, incrementPlanCount, getRemainingFreePlans, isPro, days
 import { getLocalSession } from '../lib/auth'
 
 export default function Generator() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -18,7 +18,7 @@ export default function Generator() {
 
   const handleSubmit = async (formData) => {
     if (!canGeneratePlan()) {
-      setError('خلصت الخطط المجانية. فعت حساب Pro عشان تكمل.')
+      setError(t('err_required'))
       return
     }
 
@@ -26,11 +26,11 @@ export default function Generator() {
     setError('')
 
     try {
-      const result = await generateWorkoutPlan(formData)
+      const result = await generateWorkoutPlan(formData, lang)
       incrementPlanCount()
       navigate('/result', { state: { form: formData, result } })
     } catch (err) {
-      setError('حدث خطأ. حاول مرة أخرى.')
+      setError(t('err_network'))
     } finally {
       setLoading(false)
     }
@@ -45,14 +45,14 @@ export default function Generator() {
         <p className="mt-1 text-zinc-400">{t('gen_desc')}</p>
         {!isPro() && (
           <p className="mt-2 text-sm text-zinc-500">
-            باقي {remaining} خطط مجانية
+            {t('pr_free')} — {remaining} {t('pr_feat_limited')}
             {remaining === 0 && (
-              <span> — <a href="/pricing" className="text-rmared-500 underline">اشترك Pro</a></span>
+              <span> — <a href="/pricing" className="text-rmared-500 underline">{t('pr_btn_pro')}</a></span>
             )}
           </p>
         )}
         {isPro() && (
-          <p className="mt-2 text-sm text-green-500">Pro — متبقي {daysRemaining()} يوم ✓</p>
+          <p className="mt-2 text-sm text-green-500">{t('dash_pro')} — {t('dash_days')} {daysRemaining()} {t('days')} ✓</p>
         )}
       </div>
       {error && (
