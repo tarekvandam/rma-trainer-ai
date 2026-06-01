@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLang } from '../lib/lang'
 import { getRequests, getRequestsLocal, approveRequest, rejectRequest, submitProRequest, revokeSubscription, deleteRequest, syncCodesToCloud, loadPublicCodes, syncRequestsCloud, clearUnusedCodes, getActiveProUsers, saveVideosCloud } from '../lib/plan'
 import { publishPricingPlans } from '../lib/pricing-sync'
 
 async function fetchCodesWithSupabase() {
-  // Fetch Supabase data directly and merge with local admin codes
   try {
     const { supabase } = await import('../lib/supabase')
     if (supabase) {
@@ -13,7 +13,6 @@ async function fetchCodesWithSupabase() {
       if (Array.isArray(cloud)) {
         const local = loadFromStorage('rma_codes', [])
         const localMap = new Map(local.map(c => [c.code, c]))
-        // Update local codes with cloud status
         cloud.forEach(c => {
           const match = localMap.get(c.code)
           if (match) {
@@ -57,17 +56,8 @@ const DEFAULT_PRICING = [
   { id: 'pro', name: 'Pro', price: '1000', currency: 'جنيه', period: 'مرة واحدة', popular: true, features: ['توليد غير محدود', 'تمارين متقدمة', 'نظام غذائي مخصص', 'تصدير PDF', 'فيديوهات تمارين يوتيوب', 'دعم أولوية'], btnText: 'اشترك الآن', btnLink: '/payment' },
 ]
 
-const tabs = [
-  { id: 'dashboard', label: 'الرئيسية' },
-  { id: 'plans', label: 'خطط مخصصة' },
-  { id: 'pricing', label: 'الباقات' },
-  { id: 'requests', label: 'طلبات التفعيل' },
-  { id: 'codes', label: 'أكواد التفعيل' },
-  { id: 'videos', label: 'فيديوهات' },
-  { id: 'settings', label: 'الإعدادات' },
-]
-
 export default function Admin() {
+  const { t } = useLang()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [codes, setCodes] = useState(() => loadFromStorage('rma_codes', []))
@@ -84,7 +74,17 @@ export default function Admin() {
   const [showPlanForm, setShowPlanForm] = useState(false)
   const [editingPlan, setEditingPlan] = useState(null)
   const [planForm, setPlanForm] = useState({ name: '', goal: '', level: '', days: 3 })
-  const [planDays, setPlanDays] = useState([{ day: 'اليوم 1', focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
+  const [planDays, setPlanDays] = useState([{ day: t('plan_default_day_1'), focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
+
+  const tabs = [
+    { id: 'dashboard', label: t('tab_dashboard') },
+    { id: 'plans', label: t('tab_plans') },
+    { id: 'pricing', label: t('tab_pricing') },
+    { id: 'requests', label: t('tab_requests') },
+    { id: 'codes', label: t('tab_codes') },
+    { id: 'videos', label: t('tab_videos') },
+    { id: 'settings', label: t('tab_settings') },
+  ]
 
   const refreshRequests = () => setRequests(getRequestsLocal())
 
@@ -105,15 +105,12 @@ export default function Admin() {
   useEffect(() => { saveToStorage('rma_custom_plans', plans) }, [plans])
   useEffect(() => { saveToStorage('rma_pricing_plans', pricingPlans) }, [pricingPlans])
 
-  // Poll Supabase + localStorage every 5s when codes tab is open
-  // to always show up-to-date used-code status
   useEffect(() => {
     if (activeTab !== 'codes') return
     const interval = setInterval(async () => {
       const fresh = await fetchCodesWithSupabase()
       setCodes(fresh)
     }, 5000)
-    // Initial fetch immediately
     fetchCodesWithSupabase().then(setCodes)
     return () => clearInterval(interval)
   }, [activeTab])
@@ -216,13 +213,13 @@ export default function Admin() {
   }
 
   const handleRevoke = async (email) => {
-    if (!confirm('إلغاء اشتراك هذا المستخدم؟')) return
+    if (!confirm(t('confirm_revoke_user', { email }))) return
     await revokeSubscription(email)
     refreshRequests()
   }
 
   const handleDeleteRequest = async (email) => {
-    if (!confirm('مسح هذا الطلب نهائياً؟')) return
+    if (!confirm(t('confirm_delete_request'))) return
     await deleteRequest(email)
     refreshRequests()
   }
@@ -245,28 +242,28 @@ export default function Admin() {
   const editPlan = (plan) => {
     setEditingPlan(plan)
     setPlanForm({ name: plan.name, goal: plan.goal || '', level: plan.level || '', days: plan.days?.length || 3 })
-    setPlanDays(plan.days || [{ day: 'اليوم 1', focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
+    setPlanDays(plan.days || [{ day: t('plan_default_day_1'), focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
     setShowPlanForm(true)
   }
 
   const deletePlan = (id) => {
-    if (confirm('تحذف الخطة؟')) setPlans(plans.filter(p => p.id !== id))
+    if (confirm(t('confirm_delete_plan'))) setPlans(plans.filter(p => p.id !== id))
   }
 
   const resetPlanForm = () => {
     setPlanForm({ name: '', goal: '', level: '', days: 3 })
-    setPlanDays([{ day: 'اليوم 1', focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
+    setPlanDays([{ day: t('plan_default_day_1'), focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
   }
 
   const addDay = () => {
     const num = planDays.length + 1
-    setPlanDays([...planDays, { day: `اليوم ${num}`, focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
+    setPlanDays([...planDays, { day: t('plan_default_day_n', { n: num }), focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
     setPlanForm({ ...planForm, days: planDays.length + 1 })
   }
 
   const removeDay = (idx) => {
     if (planDays.length <= 1) return
-    const newDays = planDays.filter((_, i) => i !== idx).map((d, i) => ({ ...d, day: `اليوم ${i + 1}` }))
+    const newDays = planDays.filter((_, i) => i !== idx).map((d, i) => ({ ...d, day: t('plan_default_day_n', { n: i + 1 }) }))
     setPlanDays(newDays)
     setPlanForm({ ...planForm, days: newDays.length })
   }
@@ -307,14 +304,14 @@ export default function Admin() {
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold md:text-3xl">لوحة الإدارة</h1>
-          <p className="mt-1 text-sm text-zinc-400">تحكم بكل شيء</p>
+          <h1 className="text-2xl font-bold md:text-3xl">{t('admin_title')}</h1>
+          <p className="mt-1 text-sm text-zinc-400">{t('admin_subtitle')}</p>
         </div>
         <button
           onClick={logout}
           className="cursor-pointer rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-red-600 hover:text-red-400"
         >
-          خروج
+          {t('admin_logout')}
         </button>
       </div>
 
@@ -338,12 +335,12 @@ export default function Admin() {
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { label: 'إجمالي الأكواد', value: stats.totalCodes.toLocaleString(), color: 'text-white' },
-              { label: 'المفعلة من الأكواد', value: stats.usedCodes.toLocaleString(), color: 'text-green-400' },
-              { label: 'المتبقية من الأكواد', value: stats.availableCodes.toLocaleString(), color: 'text-rmared-500' },
-              { label: 'الفيديوهات', value: stats.totalVideos, color: 'text-blue-400' },
-              { label: 'طلبات معلقة', value: stats.pendingRequests.toString(), color: 'text-yellow-400' },
-              { label: 'خطط مخصصة', value: plans.length.toString(), color: 'text-purple-400' },
+              { label: t('stats_total_codes'), value: stats.totalCodes.toLocaleString(), color: 'text-white' },
+              { label: t('stats_used_codes'), value: stats.usedCodes.toLocaleString(), color: 'text-green-400' },
+              { label: t('stats_available_codes'), value: stats.availableCodes.toLocaleString(), color: 'text-rmared-500' },
+              { label: t('stats_videos'), value: stats.totalVideos, color: 'text-blue-400' },
+              { label: t('stats_pending_requests'), value: stats.pendingRequests.toString(), color: 'text-yellow-400' },
+              { label: t('stats_custom_plans'), value: plans.length.toString(), color: 'text-purple-400' },
             ].map((stat) => (
               <div key={stat.label} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 text-center">
                 <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
@@ -353,9 +350,9 @@ export default function Admin() {
           </div>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-            <h2 className="mb-3 text-lg font-bold text-green-400">مشتركين Pro النشطين</h2>
+            <h2 className="mb-3 text-lg font-bold text-green-400">{t('active_title')}</h2>
             {getActiveProUsers().length === 0 ? (
-              <p className="text-sm text-zinc-500">ما في مشتركين Pro حالياً</p>
+              <p className="text-sm text-zinc-500">{t('active_no_users')}</p>
             ) : (
               <div className="space-y-2">
                 {getActiveProUsers().map((r, i) => (
@@ -363,15 +360,15 @@ export default function Admin() {
                     <div>
                       <p className="text-sm font-medium text-zinc-200">{r.email}</p>
                       <p className="text-xs text-zinc-500">
-                        {r.code ? `كود: ${r.code} | ` : ''}
-                        {r.expiresAt ? `ينتهي: ${new Date(r.expiresAt).toLocaleDateString('ar-EG')} (${Math.ceil((new Date(r.expiresAt) - new Date()) / (1000*60*60*24))} يوم)` : ''}
+                        {r.code ? `${t('active_code')}: ${r.code} | ` : ''}
+                        {r.expiresAt ? `${t('active_expires')}: ${new Date(r.expiresAt).toLocaleDateString('ar-EG')} (${Math.ceil((new Date(r.expiresAt) - new Date()) / (1000*60*60*24))} ${t('dash_day')})` : ''}
                       </p>
                     </div>
                     <button
-                      onClick={() => { if (confirm(`إلغاء اشتراك ${r.email}؟`)) { revokeSubscription(r.email).then(() => refreshRequests()) } }}
+                      onClick={() => { if (confirm(t('confirm_revoke_user', { email: r.email }))) { revokeSubscription(r.email).then(() => refreshRequests()) } }}
                       className="cursor-pointer rounded-lg bg-red-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
                     >
-                      إلغاء الاشتراك
+                      {t('active_revoke')}
                     </button>
                   </div>
                 ))}
@@ -385,31 +382,31 @@ export default function Admin() {
         <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
           <div className="flex flex-wrap gap-3">
             <div className="flex-1 min-w-[200px]">
-              <label className="mb-1 block text-xs text-zinc-500">عدد الأكواد</label>
+              <label className="mb-1 block text-xs text-zinc-500">{t('code_count')}</label>
               <input type="number" value={bulkCount} onChange={e => setBulkCount(parseInt(e.target.value) || 1)} className={`${inputClass} text-sm`} />
             </div>
             <div className="w-24">
-              <label className="mb-1 block text-xs text-zinc-500">طول الكود</label>
+              <label className="mb-1 block text-xs text-zinc-500">{t('code_length')}</label>
               <input type="number" value={bulkLength} onChange={e => setBulkLength(parseInt(e.target.value) || 14)} className={`${inputClass} text-sm`} />
             </div>
             <div className="flex items-end gap-2">
               <button onClick={generateBulk} className="cursor-pointer rounded-lg bg-rmared-600 px-5 py-3 font-bold text-white transition hover:bg-rmared-500">
-                توليد {bulkCount.toLocaleString()} كود
+                {t('code_generate', { count: bulkCount.toLocaleString() })}
               </button>
               <button onClick={exportCodesCSV} className="cursor-pointer rounded-lg border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-500">
-                CSV
+                {t('code_export_csv')}
               </button>
               <button onClick={exportCodesSQL} className="cursor-pointer rounded-lg border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-500">
-                SQL
+                {t('code_export_sql')}
               </button>
               <button onClick={exportCodesJSON} className="cursor-pointer rounded-lg border border-rmared-600 px-4 py-3 text-sm text-rmared-400 transition hover:bg-rmared-600 hover:text-white">
-                JSON للنشر
+                {t('code_export_json')}
               </button>
-              <button onClick={() => { if (confirm('مسح كل الأكواد نهائياً؟')) { setCodes([]); syncCodesToCloud([]) } }} className="cursor-pointer rounded-lg border border-red-900 bg-red-900/30 px-4 py-3 text-sm text-red-400 transition hover:bg-red-800/70">
-                ✕ مسح الكل
+              <button onClick={() => { if (confirm(t('confirm_delete_all_codes'))) { setCodes([]); syncCodesToCloud([]) } }} className="cursor-pointer rounded-lg border border-red-900 bg-red-900/30 px-4 py-3 text-sm text-red-400 transition hover:bg-red-800/70">
+                {t('code_clear_all')}
               </button>
-              <button onClick={() => { if (confirm('مسح الأكواد غير المفعلة؟')) { clearUnusedCodes(); setCodes(prev => prev.filter(c => c.used)) } }} className="cursor-pointer rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3 text-sm text-yellow-400 transition hover:bg-yellow-800/70">
-                مسح الغير مفعلة
+              <button onClick={() => { if (confirm(t('confirm_clear_unused'))) { clearUnusedCodes(); setCodes(prev => prev.filter(c => c.used)) } }} className="cursor-pointer rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3 text-sm text-yellow-400 transition hover:bg-yellow-800/70">
+                {t('code_clear_unused')}
               </button>
             </div>
           </div>
@@ -418,20 +415,20 @@ export default function Admin() {
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="بحث عن كود..."
+            placeholder={t('code_search')}
             className={inputClass}
           />
 
           <div className="flex items-center justify-between text-sm text-zinc-500">
-            <span>إجمالي: {stats.totalCodes.toLocaleString()}</span>
-            <span>مفعل: {stats.usedCodes.toLocaleString()}</span>
-            <span>متبقي: {stats.availableCodes.toLocaleString()}</span>
+            <span>{t('code_total')}: {stats.totalCodes.toLocaleString()}</span>
+            <span>{t('code_used_label')}: {stats.usedCodes.toLocaleString()}</span>
+            <span>{t('code_available_label')}: {stats.availableCodes.toLocaleString()}</span>
           </div>
 
           <div className="max-h-96 space-y-1 overflow-y-auto">
             {filteredCodes.length === 0 && (
               <p className="py-8 text-center text-sm text-zinc-500">
-                {codes.length === 0 ? 'ما في أكواد. اضغط توليد.' : 'ما في نتائج بحث'}
+                {codes.length === 0 ? t('code_no_codes_hint') : t('code_no_results')}
               </p>
             )}
             {filteredCodes.map((c, i) => (
@@ -440,14 +437,14 @@ export default function Admin() {
                   <span className="w-8 text-zinc-600">{i + 1}</span>
                   <span className="font-mono text-zinc-200">{c.code}</span>
                   <span className={`rounded px-2 py-0.5 text-xs font-bold ${c.used ? 'bg-green-900/60 text-green-300' : 'bg-zinc-800 text-zinc-500'}`}>
-                    {c.used ? 'مفعل ✓' : 'جديد'}
+                    {c.used ? t('code_active_badge') : t('code_new_badge')}
                   </span>
                 </div>
                 <button
                   onClick={() => copyCode(c.code)}
                   className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-200"
                 >
-                  {copiedCode === c.code ? 'تم النسخ ✓' : 'نسخ'}
+                  {copiedCode === c.code ? t('code_copied') : t('code_copy')}
                 </button>
               </div>
             ))}
@@ -462,18 +459,18 @@ export default function Admin() {
               type="url"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="رابط يوتيوب"
+              placeholder={t('vid_pl')}
               className={inputClass}
             />
             <button type="submit" className="cursor-pointer rounded-lg bg-rmared-600 px-5 py-3 font-bold text-white transition hover:bg-rmared-500">
-              إضافة
+              {t('vid_add')}
             </button>
           </form>
-          {videos.length === 0 && <p className="text-center text-sm text-zinc-500">ما في فيديوهات مضافة</p>}
+          {videos.length === 0 && <p className="text-center text-sm text-zinc-500">{t('vid_no_videos')}</p>}
           <div className="flex justify-end">
             {videos.length > 0 && (
               <button onClick={() => { setVideos([]); saveVideosCloud([]) }} className="cursor-pointer rounded-lg bg-red-700/50 px-3 py-1.5 text-xs text-red-300 transition hover:bg-red-700">
-                مسح الكل
+                {t('vid_clear')}
               </button>
             )}
           </div>
@@ -502,30 +499,30 @@ export default function Admin() {
       {activeTab === 'plans' && !showPlanForm && (
         <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-rmared-500">الخطط المخصصة ({plans.length})</h2>
+            <h2 className="text-lg font-bold text-rmared-500">{t('admin_plan')} ({plans.length})</h2>
             <button onClick={() => { resetPlanForm(); setShowPlanForm(true); setEditingPlan(null) }} className="cursor-pointer rounded-lg bg-rmared-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rmared-500">
-              إضافة خطة
+              {t('admin_add_plan')}
             </button>
           </div>
-          {plans.length === 0 && <p className="py-8 text-center text-sm text-zinc-500">ما في خطط مخصصة. اضغط إضافة.</p>}
+          {plans.length === 0 && <p className="py-8 text-center text-sm text-zinc-500">{t('plan_no_plans')}</p>}
           <div className="grid gap-4 md:grid-cols-2">
             {plans.map((p) => (
               <div key={p.id} className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
                 <div className="mb-2 flex items-start justify-between">
                   <div>
                     <h3 className="font-bold text-zinc-200">{p.name}</h3>
-                    <p className="text-xs text-zinc-500">{p.days?.length || 0} أيام {p.goal ? `| ${p.goal}` : ''}</p>
+                    <p className="text-xs text-zinc-500">{p.days?.length || 0} {t('days')}{p.goal ? ` | ${p.goal}` : ''}</p>
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => editPlan(p)} className="cursor-pointer rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-300 transition hover:bg-zinc-600">تعديل</button>
-                    <button onClick={() => deletePlan(p.id)} className="cursor-pointer rounded bg-red-800 px-2 py-1 text-xs text-red-300 transition hover:bg-red-700">مسح</button>
+                    <button onClick={() => editPlan(p)} className="cursor-pointer rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-300 transition hover:bg-zinc-600">{t('admin_edit_plan')}</button>
+                    <button onClick={() => deletePlan(p.id)} className="cursor-pointer rounded bg-red-800 px-2 py-1 text-xs text-red-300 transition hover:bg-red-700">{t('admin_delete_plan')}</button>
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-zinc-400">
                   {p.days?.slice(0, 3).map((d, i) => (
-                    <p key={i}><span className="text-zinc-500">{d.day}:</span> {d.exercises?.length || 0} تمارين</p>
+                    <p key={i}><span className="text-zinc-500">{d.day}:</span> {d.exercises?.length || 0}</p>
                   ))}
-                  {p.days?.length > 3 && <p className="text-zinc-600">+{p.days.length - 3} أيام أخرى</p>}
+                  {p.days?.length > 3 && <p className="text-zinc-600">{t('plan_more_days', { count: p.days.length - 3 })}</p>}
                 </div>
               </div>
             ))}
@@ -536,22 +533,22 @@ export default function Admin() {
       {activeTab === 'plans' && showPlanForm && (
         <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-rmared-500">{editingPlan ? 'تعديل خطة' : 'خطة جديدة'}</h2>
-            <button onClick={() => { setShowPlanForm(false); setEditingPlan(null) }} className="text-sm text-zinc-500 underline">رجوع</button>
+            <h2 className="text-lg font-bold text-rmared-500">{editingPlan ? t('plan_edit_title') : t('plan_new_title')}</h2>
+            <button onClick={() => { setShowPlanForm(false); setEditingPlan(null) }} className="text-sm text-zinc-500 underline">{t('plan_back')}</button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-4">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-xs text-zinc-500">اسم الخطة</label>
-              <input type="text" value={planForm.name} onChange={e => setPlanForm({ ...planForm, name: e.target.value })} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder="مثال: خطة متقدم MMA" />
+              <label className="mb-1 block text-xs text-zinc-500">{t('plan_name_label')}</label>
+              <input type="text" value={planForm.name} onChange={e => setPlanForm({ ...planForm, name: e.target.value })} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder={t('plan_name_pl')} />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-zinc-500">الهدف</label>
-              <input type="text" value={planForm.goal} onChange={e => setPlanForm({ ...planForm, goal: e.target.value })} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder="حرق دهون / قوة" />
+              <label className="mb-1 block text-xs text-zinc-500">{t('plan_goal_label')}</label>
+              <input type="text" value={planForm.goal} onChange={e => setPlanForm({ ...planForm, goal: e.target.value })} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder={t('plan_goal_pl')} />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-zinc-500">المستوى</label>
-              <input type="text" value={planForm.level} onChange={e => setPlanForm({ ...planForm, level: e.target.value })} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder="مبتدئ / متوسط" />
+              <label className="mb-1 block text-xs text-zinc-500">{t('plan_level_label')}</label>
+              <input type="text" value={planForm.level} onChange={e => setPlanForm({ ...planForm, level: e.target.value })} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder={t('plan_level_pl')} />
             </div>
           </div>
 
@@ -565,19 +562,19 @@ export default function Admin() {
                       const newDays = [...planDays]; newDays[di].day = e.target.value; setPlanDays(newDays)
                     }} className="w-32 rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
                   </div>
-                  <button onClick={() => removeDay(di)} className="cursor-pointer text-xs text-red-500 hover:text-red-400">حذف اليوم</button>
+                  <button onClick={() => removeDay(di)} className="cursor-pointer text-xs text-red-500 hover:text-red-400">{t('plan_delete_day')}</button>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-500">تركيز اليوم</label>
+                  <label className="mb-1 block text-xs text-zinc-500">{t('plan_focus_label')}</label>
                   <input type="text" value={day.focus} onChange={e => {
                     const newDays = [...planDays]; newDays[di].focus = e.target.value; setPlanDays(newDays)
-                  }} className="mb-3 w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder="صدر + كتف + ترايسبس" />
+                  }} className="mb-3 w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder={t('plan_focus_pl')} />
                 </div>
 
                 <div className="space-y-2">
                   {day.exercises.map((ex, ei) => (
                     <div key={ei} className="flex flex-wrap items-center gap-2 rounded bg-zinc-800/50 p-2">
-                      <input type="text" value={ex.name} onChange={e => updateExercise(di, ei, 'name', e.target.value)} className="min-w-[180px] flex-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder="اسم التمرين" />
+                      <input type="text" value={ex.name} onChange={e => updateExercise(di, ei, 'name', e.target.value)} className="min-w-[180px] flex-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 outline-none focus:border-rmared-500" placeholder={t('plan_exercise_name_pl')} />
                       <div className="flex items-center gap-1 text-xs">
                         <span className="text-zinc-500">Sets:</span>
                         <input type="number" value={ex.sets} onChange={e => updateExercise(di, ei, 'sets', parseInt(e.target.value) || 0)} className="w-12 rounded border border-zinc-700 bg-zinc-900 px-1 py-1 text-center text-zinc-100 outline-none" />
@@ -594,7 +591,7 @@ export default function Admin() {
                     </div>
                   ))}
                   <button onClick={() => addExercise(di)} className="cursor-pointer rounded border border-dashed border-zinc-700 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-500 hover:text-zinc-300">
-                    + إضافة تمرين
+                    {t('plan_add_exercise')}
                   </button>
                 </div>
               </div>
@@ -603,10 +600,10 @@ export default function Admin() {
 
           <div className="flex gap-3">
             <button onClick={addDay} className="cursor-pointer rounded-lg border border-dashed border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-zinc-200">
-              + إضافة يوم
+              {t('plan_add_day')}
             </button>
             <button onClick={savePlan} className="cursor-pointer rounded-lg bg-rmared-600 px-6 py-2 text-sm font-bold text-white transition hover:bg-rmared-500">
-              {editingPlan ? 'حفظ التعديلات' : 'حفظ الخطة'}
+              {editingPlan ? t('plan_save_edit') : t('plan_save_new')}
             </button>
           </div>
         </div>
@@ -615,8 +612,8 @@ export default function Admin() {
       {activeTab === 'pricing' && (
         <div className="space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-rmared-500">تعديل الباقات</h2>
-            <span className="text-xs text-zinc-500">التعديلات بتنحفظ تلقائياً ✓</span>
+            <h2 className="text-lg font-bold text-rmared-500">{t('pricing_edit_title')}</h2>
+            <span className="text-xs text-zinc-500">{t('pricing_auto_save')}</span>
           </div>
           {pricingPlans.map((pp, pi) => (
             <div key={pp.id} className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
@@ -627,43 +624,43 @@ export default function Admin() {
                     <input type="checkbox" checked={pp.popular} onChange={e => {
                       const copy = [...pricingPlans]; copy[pi].popular = e.target.checked; setPricingPlans(copy)
                     }} className="accent-rmared-500" />
-                    الأكثر رواجاً
+                    {t('pricing_popular')}
                   </label>
-                  <button onClick={() => { if (confirm(`مسح "${pp.name}"؟`)) setPricingPlans(pricingPlans.filter((_, i) => i !== pi)) }} className="cursor-pointer rounded bg-red-800 px-2 py-1 text-xs text-red-300 transition hover:bg-red-700">
-                    ✕ مسح
+                  <button onClick={() => { if (confirm(`${t('pricing_delete')} "${pp.name}"?`)) setPricingPlans(pricingPlans.filter((_, i) => i !== pi)) }} className="cursor-pointer rounded bg-red-800 px-2 py-1 text-xs text-red-300 transition hover:bg-red-700">
+                    {t('pricing_delete')}
                   </button>
                 </div>
               </div>
               <div className="grid gap-3 md:grid-cols-4">
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-500">اسم الباقة</label>
+                  <label className="mb-1 block text-xs text-zinc-500">{t('pricing_plan_name')}</label>
                   <input type="text" value={pp.name} onChange={e => { const c = [...pricingPlans]; c[pi].name = e.target.value; setPricingPlans(c) }} className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-500">السعر</label>
+                  <label className="mb-1 block text-xs text-zinc-500">{t('pricing_price')}</label>
                   <input type="text" value={pp.price} onChange={e => { const c = [...pricingPlans]; c[pi].price = e.target.value; setPricingPlans(c) }} className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-500">العملة</label>
+                  <label className="mb-1 block text-xs text-zinc-500">{t('pricing_currency')}</label>
                   <input type="text" value={pp.currency} onChange={e => { const c = [...pricingPlans]; c[pi].currency = e.target.value; setPricingPlans(c) }} className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-500">المدة</label>
+                  <label className="mb-1 block text-xs text-zinc-500">{t('pricing_period')}</label>
                   <input type="text" value={pp.period} onChange={e => { const c = [...pricingPlans]; c[pi].period = e.target.value; setPricingPlans(c) }} className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
                 </div>
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-500">نص الزر</label>
+                  <label className="mb-1 block text-xs text-zinc-500">{t('pricing_btn_text')}</label>
                   <input type="text" value={pp.btnText} onChange={e => { const c = [...pricingPlans]; c[pi].btnText = e.target.value; setPricingPlans(c) }} className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-500">رابط الزر (مثال: /payment)</label>
+                  <label className="mb-1 block text-xs text-zinc-500">{t('pricing_btn_link')}</label>
                   <input type="text" value={pp.btnLink} onChange={e => { const c = [...pricingPlans]; c[pi].btnLink = e.target.value; setPricingPlans(c) }} className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
                 </div>
               </div>
               <div className="mt-3">
-                <label className="mb-1 block text-xs text-zinc-500">المميزات</label>
+                <label className="mb-1 block text-xs text-zinc-500">{t('pricing_features')}</label>
                 <div className="space-y-1">
                   {pp.features.map((f, fi) => (
                     <div key={fi} className="flex gap-1">
@@ -671,8 +668,8 @@ export default function Admin() {
                       <button onClick={() => { const c = [...pricingPlans]; c[pi].features = c[pi].features.filter((_, i) => i !== fi); setPricingPlans(c) }} className="cursor-pointer rounded bg-red-800 px-2 text-xs text-red-300">✕</button>
                     </div>
                   ))}
-                  <button onClick={() => { const c = [...pricingPlans]; c[pi].features.push('ميزة جديدة'); setPricingPlans(c) }} className="cursor-pointer rounded border border-dashed border-zinc-700 px-3 py-1 text-xs text-zinc-500 hover:border-zinc-500 hover:text-zinc-300">
-                    + إضافة ميزة
+                  <button onClick={() => { const c = [...pricingPlans]; c[pi].features.push(t('pricing_new_feature')); setPricingPlans(c) }} className="cursor-pointer rounded border border-dashed border-zinc-700 px-3 py-1 text-xs text-zinc-500 hover:border-zinc-500 hover:text-zinc-300">
+                    {t('pricing_add_feature')}
                   </button>
                 </div>
               </div>
@@ -681,32 +678,32 @@ export default function Admin() {
           <div className="flex flex-wrap items-center gap-3">
             <button onClick={() => {
               const c = [...pricingPlans]
-              c.push({ id: 'plan_' + Date.now(), name: 'باقة جديدة', price: '0', currency: 'ريال', period: '/شهر', popular: false, features: ['ميزة 1', 'ميزة 2'], btnText: 'اشترك', btnLink: '/payment' })
+              c.push({ id: 'plan_' + Date.now(), name: t('pricing_new_plan_name'), price: '0', currency: t('pricing_default_currency'), period: t('pricing_default_period'), popular: false, features: [t('pricing_feature_1'), t('pricing_feature_2')], btnText: t('pricing_default_btn'), btnLink: '/payment' })
               setPricingPlans(c)
             }} className="cursor-pointer rounded-lg border border-dashed border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:border-zinc-500 hover:text-zinc-200">
-              + إضافة باقة جديدة
+              {t('pricing_add_plan')}
             </button>
-            <button onClick={() => { if (confirm('رجوع للإعدادات الافتراضية؟')) setPricingPlans(DEFAULT_PRICING) }} className="cursor-pointer text-xs text-zinc-600 hover:text-zinc-400 underline">
-              استعادة الإعدادات الافتراضية
+            <button onClick={() => { if (confirm(t('confirm_reset_pricing'))) setPricingPlans(DEFAULT_PRICING) }} className="cursor-pointer text-xs text-zinc-600 hover:text-zinc-400 underline">
+              {t('pricing_reset_default')}
             </button>
           </div>
           <hr className="border-zinc-800" />
           <div className="flex items-center justify-between">
             <div>
               <button onClick={async () => {
-                if (!confirm('نشر التعديلات لكل المستخدمين؟')) return
+                if (!confirm(t('confirm_publish'))) return
                 setPublishStatus('loading')
                 const ok = await publishPricingPlans(pricingPlans)
                 setPublishStatus(ok ? 'success' : 'error')
                 setTimeout(() => setPublishStatus(null), 4000)
               }} disabled={publishStatus === 'loading'} className="cursor-pointer rounded-lg bg-green-700 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-green-700/25 transition hover:bg-green-600 disabled:opacity-50">
-                {publishStatus === 'loading' ? 'جاري النشر...' : '📡 نشر التعديلات'}
+                {publishStatus === 'loading' ? t('publishing') : t('pricing_publish')}
               </button>
             </div>
             <div>
-              {publishStatus === 'success' && <span className="text-sm text-green-400">✓ تم النشر للجميع</span>}
-              {publishStatus === 'error' && <span className="text-sm text-red-400">✕ فشل النشر — تأكد من إعدادات Supabase</span>}
-              {!publishStatus && <span className="text-xs text-zinc-600">ينشر التعديلات لكل المستخدمين</span>}
+              {publishStatus === 'success' && <span className="text-sm text-green-400">{t('publish_success')}</span>}
+              {publishStatus === 'error' && <span className="text-sm text-red-400">{t('publish_error')}</span>}
+              {!publishStatus && <span className="text-xs text-zinc-600">{t('publish_hint')}</span>}
             </div>
           </div>
         </div>
@@ -716,25 +713,25 @@ export default function Admin() {
         <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-rmared-500">
-              طلبات التفعيل
+              {t('admin_reqs')}
               {stats.pendingRequests > 0 && (
                 <span className="mr-2 rounded-full bg-yellow-600 px-2 py-0.5 text-xs text-white">{stats.pendingRequests}</span>
               )}
             </h2>
-            <button onClick={refreshRequests} className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300">⟳ تحديث</button>
+            <button onClick={refreshRequests} className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300">{t('req_refresh')}</button>
           </div>
           <div className="flex gap-2">
-            <input id="manualEmail" type="email" placeholder="إيميل المستخدم" className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
+            <input id="manualEmail" type="email" placeholder={t('req_email_pl')} className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
             <button onClick={async () => {
               const email = document.getElementById('manualEmail').value.trim()
               if (!email) return
               await submitProRequest({ email, name: 'يدوي', phone: '' })
               document.getElementById('manualEmail').value = ''
               refreshRequests()
-            }} className="cursor-pointer rounded-lg bg-zinc-700 px-4 py-2 text-sm font-bold text-zinc-200 hover:bg-zinc-600">+ إضافة طلب يدوي</button>
+            }} className="cursor-pointer rounded-lg bg-zinc-700 px-4 py-2 text-sm font-bold text-zinc-200 hover:bg-zinc-600">{t('req_add_manual')}</button>
           </div>
           {requests.length === 0 && (
-            <p className="py-8 text-center text-sm text-zinc-500">ما في طلبات</p>
+            <p className="py-8 text-center text-sm text-zinc-500">{t('req_no_requests')}</p>
           )}
           <div className="space-y-3">
             {requests.map((r, i) => (
@@ -745,8 +742,8 @@ export default function Admin() {
                     <p className="text-xs text-zinc-500">{new Date(r.createdAt).toLocaleDateString('ar-EG')}</p>
                     {r.status === 'approved' && r.expiresAt && (
                       <p className="mt-1 text-xs text-zinc-500">
-                        ينتهي: {new Date(r.expiresAt).toLocaleDateString('ar-EG')}
-                        ({Math.ceil((new Date(r.expiresAt) - new Date()) / (1000*60*60*24))} يوم)
+                        {t('active_expires')}: {new Date(r.expiresAt).toLocaleDateString('ar-EG')}
+                        ({Math.ceil((new Date(r.expiresAt) - new Date()) / (1000*60*60*24))} {t('dash_day')})
                       </p>
                     )}
                   </div>
@@ -756,28 +753,28 @@ export default function Admin() {
                     r.status === 'revoked' ? 'bg-red-800/20 text-red-300' :
                     'bg-red-600/20 text-red-400'
                   }`}>
-                    {r.status === 'pending' ? 'معلق' : r.status === 'approved' ? 'مقبول ✓' : r.status === 'revoked' ? 'ملغي' : 'مرفوض'}
+                    {r.status === 'pending' ? t('req_pending') : r.status === 'approved' ? `${t('req_approved')} ✓` : r.status === 'revoked' ? t('req_status_revoked') : t('req_rejected')}
                   </span>
                 </div>
                 {r.status === 'pending' && (
                   <div className="flex gap-2">
                     <button onClick={() => handleApprove(r.email)} className="cursor-pointer rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-green-500">
-                      موافقة
+                      {t('req_approve')}
                     </button>
                     <button onClick={() => handleReject(r.email)} className="cursor-pointer rounded-lg bg-red-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-600">
-                      رفض
+                      {t('req_reject')}
                     </button>
                   </div>
                 )}
                 {r.status === 'approved' && (
                   <button onClick={() => handleRevoke(r.email)} className="cursor-pointer rounded-lg bg-red-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700">
-                    إلغاء الاشتراك
+                    {t('req_revoke')}
                   </button>
                 )}
                 {r.status === 'revoked' && (
-                  <span className="text-xs text-zinc-500">تم الإلغاء</span>
+                  <span className="text-xs text-zinc-500">{t('req_revoked_note')}</span>
                 )}
-                <button onClick={() => handleDeleteRequest(r.email)} className="mr-auto cursor-pointer rounded bg-red-900/50 px-2 py-1 text-xs text-red-400 transition hover:bg-red-800/70">مسح</button>
+                <button onClick={() => handleDeleteRequest(r.email)} className="mr-auto cursor-pointer rounded bg-red-900/50 px-2 py-1 text-xs text-red-400 transition hover:bg-red-800/70">{t('req_delete')}</button>
               </div>
             ))}
           </div>
@@ -786,30 +783,30 @@ export default function Admin() {
 
       {activeTab === 'settings' && (
         <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
-          <h2 className="text-lg font-bold text-rmared-500">حماية لوحة الإدارة</h2>
+          <h2 className="text-lg font-bold text-rmared-500">{t('settings_title')}</h2>
           <p className="text-sm text-zinc-400">
-            الباسوورد الافتراضي: <span className="font-mono text-zinc-200">rma2025</span>
+            {t('settings_pass_info', { pass: 'rma2025' })}
           </p>
           <p className="text-sm text-zinc-500">
-            لتغييره، افتح ملف <code className="text-zinc-300">src/pages/AdminLogin.jsx</code> وغير قيمة <code className="text-zinc-300">ADMIN_PASS</code>
+            {t('settings_change_info', { file: 'src/pages/AdminLogin.jsx', var: 'ADMIN_PASS' })}
           </p>
           <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
-            <h3 className="mb-2 text-sm font-bold text-zinc-300">روابط سريعة</h3>
+            <h3 className="mb-2 text-sm font-bold text-zinc-300">{t('settings_quick_links')}</h3>
             <ul className="space-y-1 text-sm text-zinc-400">
-              <li><span className="text-rmared-500">/</span> — الرئيسية</li>
-              <li><span className="text-rmared-500">/generator</span> — مولد الخطط</li>
-              <li><span className="text-rmared-500">/pricing</span> — الباقات + تفعيل الكود</li>
-              <li><span className="text-rmared-500">/login</span> — تسجيل الدخول</li>
-              <li><span className="text-rmared-500">/admin</span> — دخول المشرفين</li>
-              <li><span className="text-rmared-500">/admin/panel</span> — لوحة الإدارة</li>
+              <li><span className="text-rmared-500">/</span> — {t('settings_route_home')}</li>
+              <li><span className="text-rmared-500">/generator</span> — {t('settings_route_gen')}</li>
+              <li><span className="text-rmared-500">/pricing</span> — {t('settings_route_pricing')}</li>
+              <li><span className="text-rmared-500">/login</span> — {t('settings_route_login')}</li>
+              <li><span className="text-rmared-500">/admin</span> — {t('settings_route_admin')}</li>
+              <li><span className="text-rmared-500">/admin/panel</span> — {t('settings_route_panel')}</li>
             </ul>
             <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
-              <h4 className="mb-1 text-xs font-bold text-zinc-400">📢 نشر الأكواد للمستخدمين</h4>
+              <h4 className="mb-1 text-xs font-bold text-zinc-400">{t('settings_publish_info_title')}</h4>
               <ol className="space-y-1 text-xs text-zinc-500">
-                <li>1. في تبويب "أكواد التفعيل" اضغط <span className="text-rmared-400">JSON للنشر</span></li>
-                <li>2. حط الملف <code className="text-zinc-300">codes.json</code> في مجلد <code className="text-zinc-300">public/</code></li>
-                <li>3. المستخدمين يدخلوا الكود من <code className="text-zinc-300">/pricing</code></li>
-                <li>4. أو شغّل SQL حق Supabase عشان قاعدة البيانات</li>
+                <li>{t('settings_publish_step1', { btn: t('code_export_json') })}</li>
+                <li>{t('settings_publish_step2', { file: 'codes.json', folder: 'public/' })}</li>
+                <li>{t('settings_publish_step3')}</li>
+                <li>{t('settings_publish_step4')}</li>
               </ol>
             </div>
           </div>

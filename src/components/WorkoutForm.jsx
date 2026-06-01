@@ -1,43 +1,45 @@
 import { useState } from 'react'
+import { useLang } from '../lib/lang'
 
 const goals = [
-  { value: 'fat_loss', label: 'حرق دهون' },
-  { value: 'muscle_gain', label: 'بناء عضلات' },
-  { value: 'endurance', label: 'تحمل قتالي' },
-  { value: 'strength', label: 'قوة' },
-  { value: 'general', label: 'لياقة عامة' },
+  { value: 'fat_loss', label: 'goal_fat_loss' },
+  { value: 'muscle_gain', label: 'goal_muscle_gain' },
+  { value: 'endurance', label: 'goal_endurance' },
+  { value: 'strength', label: 'goal_strength' },
+  { value: 'general', label: 'goal_general' },
 ]
 
 const levels = [
-  { value: 'beginner', label: 'مبتدئ' },
-  { value: 'intermediate', label: 'متوسط' },
-  { value: 'advanced', label: 'متقدم' },
+  { value: 'beginner', label: 'level_beginner' },
+  { value: 'intermediate', label: 'level_intermediate' },
+  { value: 'advanced', label: 'level_advanced' },
 ]
 
 const equipmentItems = [
-  { value: 'dumbbell', label: 'دمبل' },
-  { value: 'barbell', label: 'بار' },
-  { value: 'pullup_bar', label: 'عقلة' },
-  { value: 'bench', label: 'كرسي/بنش' },
-  { value: 'step', label: 'استيب' },
-  { value: 'kettlebell', label: 'كيتبل' },
-  { value: 'resistance_bands', label: 'باند مقاومة' },
-  { value: 'cable', label: 'كابل' },
+  { value: 'dumbbell', label: 'equip_dumbbell' },
+  { value: 'barbell', label: 'equip_barbell' },
+  { value: 'pullup_bar', label: 'equip_pullup_bar' },
+  { value: 'bench', label: 'equip_bench' },
+  { value: 'step', label: 'equip_step' },
+  { value: 'kettlebell', label: 'equip_kettlebell' },
+  { value: 'resistance_bands', label: 'equip_resistance_bands' },
+  { value: 'cable', label: 'equip_cable' },
 ]
 
 const trainingTypes = [
-  { value: 'mma', label: 'MMA' },
-  { value: 'boxing', label: 'ملاكمة' },
-  { value: 'kickboxing', label: 'كيك بوكس' },
-  { value: 'bjj', label: 'جيوجيتسو' },
-  { value: 'muay_thai', label: 'مواي تاي' },
-  { value: 'taekwondo', label: 'تاي كون دو' },
-  { value: 'karate', label: 'كاراتيه' },
-  { value: 'wrestling', label: 'مصارعة' },
-  { value: 'general', label: 'عام' },
+  { value: 'mma', label: 'type_mma' },
+  { value: 'boxing', label: 'type_boxing' },
+  { value: 'kickboxing', label: 'type_kickboxing' },
+  { value: 'bjj', label: 'type_bjj' },
+  { value: 'muay_thai', label: 'type_muay_thai' },
+  { value: 'taekwondo', label: 'type_taekwondo' },
+  { value: 'karate', label: 'type_karate' },
+  { value: 'wrestling', label: 'type_wrestling' },
+  { value: 'general', label: 'type_general' },
 ]
 
 export default function WorkoutForm({ onSubmit, loading }) {
+  const { t } = useLang()
   const [form, setForm] = useState({
     name: '',
     weight: '',
@@ -68,10 +70,10 @@ export default function WorkoutForm({ onSubmit, loading }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
-    if (!form.name.trim()) { setError('الاسم مطلوب'); return }
-    if (!form.weight.trim()) { setError('الوزن مطلوب'); return }
-    if (!form.height.trim()) { setError('الطول مطلوب'); return }
-    if (!form.age.trim()) { setError('العمر مطلوب'); return }
+    if (!form.name.trim()) { setError(t('wf_error_name')); return }
+    if (!form.weight.trim()) { setError(t('wf_error_weight')); return }
+    if (!form.height.trim()) { setError(t('wf_error_height')); return }
+    if (!form.age.trim()) { setError(t('wf_error_age')); return }
     onSubmit(form)
   }
 
@@ -88,50 +90,50 @@ export default function WorkoutForm({ onSubmit, loading }) {
       )}
       <div className="grid gap-5 md:grid-cols-2">
         <div>
-          <label className={labelClass}>الاسم</label>
-          <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="مثال: أحمد" className={inputClass} />
+          <label className={labelClass}>{t('wf_name')}</label>
+          <input type="text" name="name" value={form.name} onChange={handleChange} placeholder={t('wf_name_pl')} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>العمر</label>
-          <input type="number" name="age" value={form.age} onChange={handleChange} placeholder="مثال: 25" min="10" max="100" className={inputClass} />
+          <label className={labelClass}>{t('wf_age')}</label>
+          <input type="number" name="age" value={form.age} onChange={handleChange} placeholder={t('wf_age_pl')} min="10" max="100" className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>الوزن (كجم)</label>
-          <input type="number" name="weight" value={form.weight} onChange={handleChange} placeholder="مثال: 75" min="20" max="300" className={inputClass} />
+          <label className={labelClass}>{t('wf_weight')}</label>
+          <input type="number" name="weight" value={form.weight} onChange={handleChange} placeholder={t('wf_weight_pl')} min="20" max="300" className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>الطول (سم)</label>
-          <input type="number" name="height" value={form.height} onChange={handleChange} placeholder="مثال: 175" min="50" max="250" className={inputClass} />
+          <label className={labelClass}>{t('wf_height')}</label>
+          <input type="number" name="height" value={form.height} onChange={handleChange} placeholder={t('wf_height_pl')} min="50" max="250" className={inputClass} />
         </div>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
         <div>
-          <label className={labelClass}>الهدف</label>
+          <label className={labelClass}>{t('wf_goal')}</label>
           <select name="goal" value={form.goal} onChange={handleChange} className={selectClass}>
-            {goals.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+            {goals.map((g) => <option key={g.value} value={g.value}>{t(g.label)}</option>)}
           </select>
         </div>
         <div>
-          <label className={labelClass}>المستوى</label>
+          <label className={labelClass}>{t('wf_level')}</label>
           <select name="level" value={form.level} onChange={handleChange} className={selectClass}>
-            {levels.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+            {levels.map((l) => <option key={l.value} value={l.value}>{t(l.label)}</option>)}
           </select>
         </div>
         <div>
-          <label className={labelClass}>أيام التمرين</label>
+          <label className={labelClass}>{t('wf_days')}</label>
           <select name="days" value={form.days} onChange={handleChange} className={selectClass}>
-            {[2, 3, 4, 5, 6].map((d) => <option key={d} value={d}>{d} أيام</option>)}
+            {[2, 3, 4, 5, 6].map((d) => <option key={d} value={d}>{d} {t('days')}</option>)}
           </select>
         </div>
         <div>
-          <label className={labelClass}>نوع التمرين</label>
+          <label className={labelClass}>{t('wf_type')}</label>
           <select name="trainingType" value={form.trainingType} onChange={handleChange} className={selectClass}>
-            {trainingTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            {trainingTypes.map((type) => <option key={type.value} value={type.value}>{t(type.label)}</option>)}
           </select>
         </div>
         <div className="md:col-span-2">
-          <label className={labelClass}>المعدات المتاحة (اختر كل اللي عندك)</label>
+          <label className={labelClass}>{t('wf_equip')}</label>
           <div className="flex flex-wrap gap-2">
             {equipmentItems.map((item) => {
               const checked = form.equipment.includes(item.value)
@@ -146,12 +148,12 @@ export default function WorkoutForm({ onSubmit, loading }) {
                       : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500'
                   }`}
                 >
-                  {checked ? '✓ ' : ''}{item.label}
+                  {checked ? '✓ ' : ''}{t(item.label)}
                 </button>
               )
             })}
             {form.equipment.length === 0 && (
-              <span className="text-sm text-zinc-500">(بدون أجهزة — تمارين وزن الجسم)</span>
+              <span className="text-sm text-zinc-500">{t('wf_equip_none')}</span>
             )}
           </div>
         </div>
@@ -162,7 +164,7 @@ export default function WorkoutForm({ onSubmit, loading }) {
         disabled={loading}
         className="w-full cursor-pointer rounded-lg bg-rmared-600 px-6 py-4 text-lg font-bold text-white shadow-lg shadow-rmared-600/25 transition hover:bg-rmared-500 active:scale-[0.98] disabled:opacity-50"
       >
-        {loading ? 'جاري التوليد...' : 'توليد الخطة 🥋'}
+        {loading ? t('wf_submit_loading') : t('wf_submit')}
       </button>
     </form>
   )

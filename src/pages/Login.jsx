@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { localSignUp, localSignIn } from '../lib/auth'
+import { useLang } from '../lib/lang'
 
 export default function Login() {
+  const { t } = useLang()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -16,7 +18,7 @@ export default function Login() {
     setSuccess(false)
     const { error } = isSignUp ? localSignUp(email, password) : localSignIn(email, password)
     if (error) setMsg(error.message)
-    else { setSuccess(true); setMsg('تم بنجاح!'); setTimeout(() => navigate('/'), 1000) }
+    else { setSuccess(true); setMsg(t('li_success')); setTimeout(() => navigate('/'), 1000) }
   }
 
   const inputClass = "w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-rmared-500 focus:ring-1 focus:ring-rmared-500"
@@ -25,17 +27,17 @@ export default function Login() {
     <div className="animate-fade-in flex flex-col items-center pt-8">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">{isSignUp ? 'إنشاء حساب' : 'دخول'}</h1>
+          <h1 className="text-2xl font-bold">{isSignUp ? t('li_reg_title') : t('li_title')}</h1>
           <p className="mt-1 text-sm text-zinc-400">
-            {isSignUp ? 'اشترك للوصول الكامل' : 'ادخل لحسابك'}
+            {isSignUp ? t('li_sub_register') : t('li_sub_login')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="email" placeholder="البريد الإلكتروني" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} required />
-          <input type="password" placeholder="كلمة السر" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} required minLength={6} />
+          <input type="email" placeholder={t('li_email')} value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} required />
+          <input type="password" placeholder={t('li_password')} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} required minLength={6} />
           <button type="submit" className="w-full cursor-pointer rounded-lg bg-rmared-600 px-6 py-3 font-bold text-white transition hover:bg-rmared-500">
-            {isSignUp ? 'تسجيل' : 'دخول'}
+            {isSignUp ? t('li_btn_reg') : t('li_btn')}
           </button>
         </form>
 
@@ -49,7 +51,7 @@ export default function Login() {
           onClick={() => setIsSignUp(!isSignUp)}
           className="block w-full text-center text-sm text-zinc-400 underline transition hover:text-zinc-200"
         >
-          {isSignUp ? 'عندي حساب — دخول' : 'ما عندي حساب — سجل'}
+          {isSignUp ? `${t('li_have_account')} — ${t('li_login')}` : `${t('li_no_account')} — ${t('li_register')}`}
         </button>
       </div>
     </div>

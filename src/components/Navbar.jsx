@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { getLocalSession } from '../lib/auth'
 import { isPro, daysRemaining } from '../lib/plan'
+import { useLang } from '../lib/lang'
 
 export default function Navbar() {
+  const { t, lang, toggleLang } = useLang()
   const location = useLocation()
   const [session, setSession] = useState(null)
   const [remaining, setRemaining] = useState(0)
@@ -14,11 +16,11 @@ export default function Navbar() {
   }, [location])
 
   const links = [
-    { to: '/', label: 'الرئيسية' },
-    { to: '/generator', label: 'المولد' },
-    { to: '/bmr', label: 'BMR' },
-    { to: '/pricing', label: 'الباقات' },
-    { to: session ? '/dashboard' : '/login', label: session ? 'حسابي' : 'دخول' },
+    { to: '/', label: t('nav_home') },
+    { to: '/generator', label: t('nav_gen') },
+    { to: '/bmr', label: t('nav_bmr') },
+    { to: '/pricing', label: t('nav_pricing') },
+    { to: session ? '/dashboard' : '/login', label: session ? t('nav_account') : t('nav_login') },
   ]
 
   return (
@@ -29,6 +31,9 @@ export default function Navbar() {
           <span>RMA Trainer</span>
         </Link>
         <div className="flex w-full justify-around md:w-auto md:gap-1">
+          <button onClick={toggleLang} className="cursor-pointer rounded-lg border border-zinc-700 px-2 py-1 text-xs font-medium text-zinc-400 transition hover:border-zinc-500 hover:text-zinc-200">
+            {lang === 'ar' ? 'EN' : 'AR'}
+          </button>
           {links.map((link) => {
             const isActive = location.pathname === link.to
             return (
@@ -49,7 +54,7 @@ export default function Navbar() {
       </div>
       {remaining > 0 && (
         <div className="hidden justify-center bg-rmared-600/10 py-0.5 text-xs text-rmared-400 md:flex">
-          الاشتراك متبقي {remaining} يوم
+          {t('nav_remaining')} {remaining} {t('nav_home') === 'الرئيسية' ? 'يوم' : 'day(s)'}
         </div>
       )}
     </nav>

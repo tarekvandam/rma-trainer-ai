@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { LangProvider } from './lib/lang'
 import { loadPublicCodes, checkAllExpired, getPlan, activatePro, getRequestStatus, syncRequestsCloud, incrementVisitorCount } from './lib/plan'
 import { getLocalSession } from './lib/auth'
 import Layout from './components/Layout'
@@ -50,21 +51,23 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/generator" element={<Generator />} />
-            <Route path="/result" element={<Result />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/payment" element={<Payment />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<AdminLogin />} />
-            <Route path="/admin/panel" element={<Admin />} />
-            <Route path="/revoke" element={<Revoke />} />
-            <Route path="/bmr" element={<BMCalculator />} />
-          </Route>
-        </Routes>
+        <LangProvider>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/generator" element={<Generator />} />
+              <Route path="/result" element={<Result />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/payment" element={<Payment />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/admin" element={<AdminLogin />} />
+              <Route path="/admin/panel" element={<Admin />} />
+              <Route path="/revoke" element={<Revoke />} />
+              <Route path="/bmr" element={<BMCalculator />} />
+            </Route>
+          </Routes>
+        </LangProvider>
       </AuthProvider>
     </BrowserRouter>
   )

@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
 import { useState } from 'react'
+import { useLang } from '../lib/lang'
 
 const PW = 2480, PH = 3508, M = 160, CW = PW - M * 2, PY = PH - M, CR = 28
 const C = {
@@ -13,24 +14,25 @@ const GOL = { fat_loss: 'حرق دهون', muscle_gain: 'تضخيم', endurance:
 const TYP = { mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'BJJ', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', general: 'لياقة عامة' }
 
 export default function PdfExport({ form, result }) {
+  const { t, lang } = useLang()
   const [loading, setLoading] = useState(false)
   const handleExport = async () => {
     setLoading(true)
     try {
-      if (!result) { alert('ما في خطة للتصدير'); return }
-      await renderPdf(form, result)
-    } catch (err) { console.error(err); alert('حدث خطأ — حاول مرة أخرى') }
+      if (!result) { alert(t('err_required')); return }
+      await renderPdf(form, result, t, lang)
+    } catch (err) { console.error(err); alert(t('err_network')) }
     finally { setLoading(false) }
   }
   return (
     <button onClick={handleExport} disabled={loading}
       className="w-full cursor-pointer rounded-lg bg-rmared-600 px-6 py-3 font-bold text-white shadow-lg shadow-rmared-600/25 transition hover:bg-rmared-500 disabled:opacity-50">
-      {loading ? 'جاري التصدير...' : '📄 تصدير PDF'}
+      {loading ? t('wf_submit_loading') : '📄 ' + t('res_pdf')}
     </button>
   )
 }
 
-async function renderPdf(form, result) {
+async function renderPdf(form, result, t, lang) {
   const doc = new jsPDF('p', 'mm', 'a4')
   const pages = []
   let cv = null, cx = null, y = M
@@ -87,23 +89,23 @@ async function renderPdf(form, result) {
 
     y += 100
     sf(36); cx.fillStyle = C.text2
-    cx.fillText('برنامج تدريبي احترافي', PW - M, y)
+    cx.fillText(t('pdf_title'), PW - M, y)
 
     y += 60; dl(y)
 
     const cw = (CW - 50) / 2, ch = 140, gap = 50
     const rows = [
       [
-        { icon: '🥊', label: 'الاسم', value: form?.name || 'غير محدد' },
-        { icon: '🎯', label: 'الهدف', value: GOL[form?.goal] || form?.goal || '—' },
+        { icon: '🥊', label: t('wf_name'), value: form?.name || '—' },
+        { icon: '🎯', label: t('pdf_goal'), value: GOL[form?.goal] || form?.goal || '—' },
       ],
       [
-        { icon: '📊', label: 'المستوى', value: LVL[form?.level] || form?.level || '—' },
-        { icon: '🥋', label: 'نوع التمرين', value: TYP[form?.trainingType] || form?.trainingType || result?.trainingType || '—' },
+        { icon: '📊', label: t('wf_level'), value: LVL[form?.level] || form?.level || '—' },
+        { icon: '🥋', label: t('pdf_type'), value: TYP[form?.trainingType] || form?.trainingType || result?.trainingType || '—' },
       ],
       [
-        { icon: '📅', label: 'تاريخ التوليد', value: new Date().toLocaleDateString('ar-EG') },
-        { icon: '📋', label: 'التقسيم', value: result?.split || `${form?.days || 3} أيام` },
+        { icon: '📅', label: t('dash_days'), value: new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US') },
+        { icon: '📋', label: t('pdf_split'), value: result?.split || `${form?.days || 3} ${t('days')}` },
       ],
     ]
 
@@ -126,7 +128,9 @@ async function renderPdf(form, result) {
 
     y += 60; eh(120)
     sf(30); cx.textAlign = 'center'; cx.fillStyle = C.text3
-    cx.fillText('« القوة الحقيقية لا تأتي من الجسد بل من الإرادة التي لا تستسلم »', PW / 2, y)
+    cx.fillText(lang === 'ar'
+      ? '« القوة الحقيقية لا تأتي من الجسد بل من الإرادة التي لا تستسلم »'
+      : '« True strength comes not from the body, but from an unyielding will »', PW / 2, y)
     cx.textAlign = 'right'
   }
 
@@ -134,11 +138,10 @@ async function renderPdf(form, result) {
   function renderWorkoutDays() {
     if (!result?.days?.length) return
 
-    // Section header
     eh(60)
     ab(y); y += 20; eh(80)
     sf(44, 'bold'); cx.textAlign = 'right'; cx.fillStyle = C.text
-    cx.fillText('⚡ البرنامج التدريبي', PW - M, y)
+    cx.fillText('⚡ ' + t('res_exercises'), PW - M, y)
     cx.fillStyle = C.red; cx.fillRect(PW - M, y + 8, 120, 4)
     y += 60
 
@@ -146,16 +149,14 @@ async function renderPdf(form, result) {
       const day = result.days[di]
       if (!day?.exercises?.length) continue
       const exs = day.exercises
-      const cardioIdx = exs.findIndex(e => e.name?.includes('كارديو'))
+      const cardioIdx = exs.findIndex(e => e.name?.includes('كارديو') || e.name?.includes('Cardio'))
       const normalExs = cardioIdx >= 0 ? exs.filter((_, i) => i !== cardioIdx) : exs
       const h = 100 + normalExs.length * 50 + (cardioIdx >= 0 ? 60 : 0)
 
       eh(h + 20)
 
-      // Day card
       dc(M, y, CW, h)
 
-      // Day number circle
       const cirX = PW - M - 70
       cx.beginPath(); cx.arc(cirX, y + 40, 28, 0, Math.PI * 2)
       cx.fillStyle = C.red; cx.fill()
@@ -164,7 +165,8 @@ async function renderPdf(form, result) {
       cx.textAlign = 'right'
 
       sf(34, 'bold'); cx.fillStyle = C.text
-      cx.fillText(day.day || `اليوم ${di + 1}`, PW - M - 120, y + 22)
+      const dayLabel = t('res_day') + ' ' + (di + 1)
+      cx.fillText(day.day || dayLabel, PW - M - 120, y + 22)
       sf(24); cx.fillStyle = C.text2
       cx.fillText('🎯 ' + (day.focus || ''), PW - M - 120, y + 60)
 
@@ -188,10 +190,11 @@ async function renderPdf(form, result) {
         cx.fillStyle = '#1a1020'
         cx.fillRect(ex2, ey, ew, 48)
         sf(26, 'bold'); cx.fillStyle = C.red; cx.textAlign = 'right'
-        cx.fillText(cardio.name, ex2 + ew - 20, ey + 10)
+        const cName = cardio.name.replace('🔥 كارديو:', t('res_cardio')).replace('🔥 Cardio:', t('res_cardio'))
+        cx.fillText(cName, ex2 + ew - 20, ey + 10)
         if (cardio.durationMinutes) {
           sf(24); cx.fillStyle = '#ff6666'; cx.textAlign = 'left'
-          cx.fillText(`⏱ ${cardio.durationMinutes} دقيقة`, ex2 + 20, ey + 12)
+          cx.fillText(`⏱ ${cardio.durationMinutes} ${t('res_min')}`, ex2 + 20, ey + 12)
         }
         cx.textAlign = 'right'
         ey += 55
@@ -205,16 +208,16 @@ async function renderPdf(form, result) {
   function renderNutrition() {
     eh(60); ab(y); y += 20; eh(80)
     sf(44, 'bold'); cx.textAlign = 'right'; cx.fillStyle = C.text
-    cx.fillText('🍎 النظام الغذائي', PW - M, y)
+    cx.fillText('🍎 ' + t('pdf_nutrition'), PW - M, y)
     cx.fillStyle = C.red; cx.fillRect(PW - M, y + 8, 120, 4)
     y += 60
 
     const cw = (CW - 60) / 3, ch = 150
     eh(ch + 20); const sy = y
     const items = [
-      { icon: '🔥', label: 'معدل الأيض', value: result?.bmr || '—' },
-      { icon: '⚡', label: 'السعرات', value: result?.dailyCalories || '—' },
-      { icon: '💪', label: 'البروتين', value: result?.protein || '—' },
+      { icon: '🔥', label: t('pdf_bmr'), value: result?.bmr || '—' },
+      { icon: '⚡', label: t('pdf_calories'), value: result?.dailyCalories || '—' },
+      { icon: '💪', label: t('pdf_protein'), value: result?.protein || '—' },
     ]
     for (let i = 0; i < 3; i++) {
       const cx2 = PW - M - cw - i * (cw + 30)
@@ -230,7 +233,6 @@ async function renderPdf(form, result) {
 
     y = sy + ch + 50
 
-    // Nutrition text card
     if (result?.nutrition) {
       eh(140); dc(M, y, CW, 130); sf(26); cx.fillStyle = C.text2
       const ls = wr(result.nutrition, CW - 60)
@@ -243,11 +245,10 @@ async function renderPdf(form, result) {
       y += 140
     }
 
-    // Tips
     if (result?.tips?.length) {
       eh(60); ab(y); y += 20; eh(80)
       sf(44, 'bold'); cx.textAlign = 'right'; cx.fillStyle = C.text
-      cx.fillText('⭐ نصائح ذهبية', PW - M, y)
+      cx.fillText('⭐ ' + t('pdf_tips'), PW - M, y)
       cx.fillStyle = C.red; cx.fillRect(PW - M, y + 8, 120, 4)
       y += 60
 
@@ -275,7 +276,9 @@ async function renderPdf(form, result) {
     sf(26); cx.fillStyle = C.text3
     cx.fillText('www.rma-trainer-ai.vercel.app', PW / 2, y); y += 60
     sf(28); cx.fillStyle = C.text2
-    cx.fillText('« النجاح ليس نهاية المطاف، بل هو الإصرار على الاستمرار رغم كل الصعاب »', PW / 2, y)
+    cx.fillText(lang === 'ar'
+      ? '« النجاح ليس نهاية المطاف، بل هو الإصرار على الاستمرار رغم كل الصعاب »'
+      : '« Success is not final, it is the determination to keep going despite all odds »', PW / 2, y)
     cx.textAlign = 'right'
   }
 

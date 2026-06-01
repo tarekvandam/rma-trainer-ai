@@ -3,24 +3,28 @@ import { Link, useNavigate } from 'react-router-dom'
 import { getPlan, isPro, activatePro, getRemainingFreePlans, validateCode, daysRemaining } from '../lib/plan'
 import { getLocalSession } from '../lib/auth'
 import { fetchPricingPlansPublic } from '../lib/pricing-sync'
+import { useLang } from '../lib/lang'
 
-const DEFAULT_PRICING = [
-  { id: 'free', name: 'Free', price: '0', currency: 'ريال', period: '/شهر', popular: false, features: ['توليد 3 خطط شهرياً', 'تمارين أساسية', 'نصائح غذائية عامة', 'عرض النتائج'], btnText: 'خطتك الحالية', btnLink: '' },
-  { id: 'pro', name: 'Pro', price: '1000', currency: 'جنيه', period: 'مرة واحدة', popular: true, features: ['توليد غير محدود', 'تمارين متقدمة', 'نظام غذائي مخصص', 'تصدير PDF', 'فيديوهات تمارين يوتيوب', 'دعم أولوية'], btnText: 'اشترك الآن', btnLink: '/payment' },
-]
+function getDefaultPricing(t) {
+  return [
+    { id: 'free', name: 'Free', price: '0', currency: 'ريال', period: '/شهر', popular: false, features: [t('pr_feat_limited'), 'تمارين أساسية', 'نصائح غذائية عامة', 'عرض النتائج'], btnText: t('pr_btn'), btnLink: '' },
+    { id: 'pro', name: 'Pro', price: '1000', currency: 'جنيه', period: t('pr_once'), popular: true, features: [t('pr_feat_unlimited'), t('pr_feat_advanced'), t('pr_feat_diet'), t('pr_feat_pdf'), t('pr_feat_videos'), t('pr_feat_contact')], btnText: t('pr_btn_pro'), btnLink: '/payment' },
+  ]
+}
 
-function loadPricing() {
+function loadPricing(t) {
   try {
     const data = localStorage.getItem('rma_pricing_plans')
-    return data ? JSON.parse(data) : DEFAULT_PRICING
+    return data ? JSON.parse(data) : getDefaultPricing(t)
   } catch {
-    return DEFAULT_PRICING
+    return getDefaultPricing(t)
   }
 }
 
 export default function Pricing() {
   const navigate = useNavigate()
-  const [pricingPlans, setPricingPlans] = useState(() => { return loadPricing() })
+  const { t } = useLang()
+  const [pricingPlans, setPricingPlans] = useState(() => { return loadPricing(t) })
   const [serialCode, setSerialCode] = useState('')
   const [msg, setMsg] = useState('')
   const [success, setSuccess] = useState(false)
@@ -30,11 +34,11 @@ export default function Pricing() {
     setPlan(getPlan())
     const hasLocal = localStorage.getItem('rma_pricing_plans')
     if (!hasLocal) {
-      fetchPricingPlansPublic(DEFAULT_PRICING).then(data => {
+      fetchPricingPlansPublic(getDefaultPricing(t)).then(data => {
         if (data && data.length) setPricingPlans(data)
       })
     }
-  }, [])
+  }, [t])
 
   const handleActivate = async (e) => {
     e.preventDefault()
@@ -44,7 +48,7 @@ export default function Pricing() {
     const session = getLocalSession()
     if (!session || !session.email) {
       sessionStorage.setItem('pending_code', serialCode.trim().toUpperCase())
-      setMsg('يجب تسجيل الدخول أولاً')
+      setMsg(t('pr_login_req'))
       setTimeout(() => navigate('/login'), 1200)
       return
     }
@@ -93,11 +97,11 @@ export default function Pricing() {
   return (
     <div className="animate-fade-in space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold md:text-3xl">الباقات</h1>
+        <h1 className="text-2xl font-bold md:text-3xl">{t('pr_title')}</h1>
         <p className="mt-1 text-zinc-400">
           {plan.type === 'pro'
-            ? `Pro — متبقي ${daysRemaining()} يوم`
-            : `باقي لك ${getRemainingFreePlans()} خطط مجانية هذا الشهر`
+            ? `Pro — ${t('dash_days')} ${daysRemaining()} ${t('days')}`
+            : `${t('pr_free')} — ${getRemainingFreePlans()} ${t('pr_feat_limited')}`
           }
         </p>
       </div>
@@ -113,7 +117,7 @@ export default function Pricing() {
             >
               {isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-rmared-600 px-4 py-1 text-xs font-bold text-white">
-                  {isCurrentPlan ? 'مشترك ✓' : 'الأكثر رواجاً'}
+                  {isCurrentPlan ? t('code_active_badge') : t('pricing_popular')}
                 </div>
               )}
               <h3 className={`text-xl font-bold ${isPopular ? 'text-rmared-500' : 'text-zinc-300'}`}>{p.name}</h3>
@@ -138,12 +142,12 @@ export default function Pricing() {
                       : 'border border-zinc-700 text-zinc-300 hover:border-zinc-500'
                   }`}
                 >
-                  {p.btnText || 'اشترك'}
+                  {p.btnText || t('pr_btn_pro')}
                 </Link>
               )}
               {isCurrentPlan && (
                 <div className={`block w-full rounded-lg py-3 text-center font-bold text-white ${plan.type === 'pro' ? 'bg-green-600' : 'border border-zinc-700 text-zinc-300'}`}>
-                  {plan.type === 'pro' ? 'مفعل ✓' : (p.btnText || 'خطتك الحالية')}
+                  {plan.type === 'pro' ? t('code_active_badge') : (p.btnText || t('pr_btn'))}
                 </div>
               )}
               {!p.btnLink && !isCurrentPlan && (
@@ -157,19 +161,19 @@ export default function Pricing() {
       </div>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
-        <h2 className="mb-3 text-center text-lg font-bold text-rmared-500">تفعيل كود</h2>
+        <h2 className="mb-3 text-center text-lg font-bold text-rmared-500">{t('pr_activate')} {t('pr_code_pl')}</h2>
         <form onSubmit={handleActivate} className="mx-auto flex max-w-md gap-3">
           <input
             type="text"
             value={serialCode}
             onChange={(e) => setSerialCode(e.target.value)}
-            placeholder="أدخل كود التفعيل"
+            placeholder={t('pr_code_pl')}
             className={inputClass}
             dir="ltr"
             style={{ textAlign: 'left' }}
           />
           <button type="submit" className="cursor-pointer rounded-lg bg-rmared-600 px-6 py-3 font-bold text-white transition hover:bg-rmared-500">
-            تفعيل
+            {t('pr_activate')}
           </button>
         </form>
         {msg && (

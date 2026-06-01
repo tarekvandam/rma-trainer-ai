@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLang } from '../lib/lang'
 import WorkoutForm from '../components/WorkoutForm'
 import { generateWorkoutPlan } from '../lib/ai'
 import { canGeneratePlan, incrementPlanCount, getRemainingFreePlans, isPro, daysRemaining } from '../lib/plan'
 import { getLocalSession } from '../lib/auth'
 
 export default function Generator() {
+  const { t } = useLang()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -39,8 +41,8 @@ export default function Generator() {
   return (
     <div className="animate-fade-in space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold md:text-3xl">توليد الخطة</h1>
-        <p className="mt-1 text-zinc-400">أدخل بياناتك نحصل لك على أفضل خطة</p>
+        <h1 className="text-2xl font-bold md:text-3xl">{t('gen_title')}</h1>
+        <p className="mt-1 text-zinc-400">{t('gen_desc')}</p>
         {!isPro() && (
           <p className="mt-2 text-sm text-zinc-500">
             باقي {remaining} خطط مجانية

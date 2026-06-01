@@ -1,11 +1,12 @@
 import { useState } from 'react'
+import { useLang } from '../lib/lang'
 
 const activityLabels = {
-  sedentary: { label: 'خامل (بدون تمارين)', factor: 1.2 },
-  light: { label: 'خفيف (1-3 أيام/أسبوع)', factor: 1.375 },
-  moderate: { label: 'معتدل (3-5 أيام/أسبوع)', factor: 1.55 },
-  very: { label: 'نشط (6-7 أيام/أسبوع)', factor: 1.725 },
-  extreme: { label: 'شديد جداً (مرتين يومياً)', factor: 1.9 },
+  sedentary: { key: 'act_sedentary', factor: 1.2 },
+  light: { key: 'act_light', factor: 1.375 },
+  moderate: { key: 'act_moderate', factor: 1.55 },
+  very: { key: 'act_very', factor: 1.725 },
+  extreme: { key: 'act_extreme', factor: 1.9 },
 }
 
 function calcBMR(gender, age, weight, height, bodyFat) {
@@ -31,6 +32,7 @@ function calcBMR(gender, age, weight, height, bodyFat) {
 }
 
 export default function BMCalculator() {
+  const { t } = useLang()
   const [gender, setGender] = useState('male')
   const [age, setAge] = useState('')
   const [weight, setWeight] = useState('')
@@ -48,11 +50,11 @@ export default function BMCalculator() {
     const h = parseFloat(height)
     const bf = parseFloat(bodyFat) || 0
 
-    if (!age || !weight || !height) { setError('السن والوزن والطول إجباريين'); return }
-    if (a < 1 || a > 100) { setError('السن بين 1 و 100'); return }
-    if (w < 10 || w > 400) { setError('الوزن بين 10 و 400 كجم'); return }
-    if (h < 50 || h > 250) { setError('الطول بين 50 و 250 سم'); return }
-    if (bf && (bf < 1 || bf > 70)) { setError('نسبة الدهون بين 1% و 70%'); return }
+    if (!age || !weight || !height) { setError(t('err_required')); return }
+    if (a < 1 || a > 100) { setError(t('err_invalid') + ' ' + t('bmr_age')); return }
+    if (w < 10 || w > 400) { setError(t('err_invalid') + ' ' + t('bmr_weight')); return }
+    if (h < 50 || h > 250) { setError(t('err_invalid') + ' ' + t('bmr_height')); return }
+    if (bf && (bf < 1 || bf > 70)) { setError(t('err_invalid') + ' ' + t('bmr_bf')); return }
 
     const bmrResult = calcBMR(gender, a, w, h, bf)
     const factor = activityLabels[activity].factor
@@ -62,7 +64,7 @@ export default function BMCalculator() {
       ...bmrResult,
       bmr: bmrResult.bmr,
       tdee,
-      activityLabel: activityLabels[activity].label,
+      activityLabel: t(activityLabels[activity].key),
       activityFactor: factor,
       fatLoss15: Math.round(tdee * 0.85),
       fatLoss20: Math.round(tdee * 0.8),
@@ -78,107 +80,106 @@ export default function BMCalculator() {
     <div className="animate-fade-in space-y-6">
       <div className="pt-4 text-center">
         <div className="text-4xl">🧬</div>
-        <h1 className="mt-2 text-2xl font-bold">حاسبة BMR و TDEE</h1>
-        <p className="text-sm text-zinc-400">معدل الأيض الأساسي والسعرات حسب نشاطك</p>
+        <h1 className="mt-2 text-2xl font-bold">{t('bmr_title')}</h1>
+        <p className="text-sm text-zinc-400">{t('bmr_desc')}</p>
       </div>
 
       <form onSubmit={handleCalc} className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className={labelClass}>الجنس</label>
+            <label className={labelClass}>{t('bmr_gender')}</label>
             <select value={gender} onChange={e => setGender(e.target.value)} className={inputClass}>
-              <option value="male">ذكر</option>
-              <option value="female">أنثى</option>
+              <option value="male">{t('bmr_male')}</option>
+              <option value="female">{t('bmr_female')}</option>
             </select>
           </div>
           <div>
-            <label className={labelClass}>السن</label>
-            <input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="مثال: 25" min="1" max="100" className={inputClass} />
+            <label className={labelClass}>{t('bmr_age')}</label>
+            <input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder={t('bmr_age_pl')} min="1" max="100" className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>الوزن (كجم)</label>
-            <input type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="مثال: 75" step="0.1" min="10" max="400" className={inputClass} />
+            <label className={labelClass}>{t('bmr_weight')}</label>
+            <input type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder={t('bmr_weight_pl')} step="0.1" min="10" max="400" className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>الطول (سم)</label>
-            <input type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="مثال: 175" step="0.1" min="50" max="250" className={inputClass} />
+            <label className={labelClass}>{t('bmr_height')}</label>
+            <input type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder={t('bmr_height_pl')} step="0.1" min="50" max="250" className={inputClass} />
           </div>
         </div>
 
         <div>
-          <label className={labelClass}>مستوى النشاط</label>
+          <label className={labelClass}>{t('bmr_activity')}</label>
           <select value={activity} onChange={e => setActivity(e.target.value)} className={inputClass}>
             {Object.entries(activityLabels).map(([k, v]) => (
-              <option key={k} value={k}>{v.label} (×{v.factor})</option>
+              <option key={k} value={k}>{t(v.key)} (×{v.factor})</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className={labelClass}>نسبة الدهون (اختياري — لنتيجة أدق)</label>
-          <input type="number" value={bodyFat} onChange={e => setBodyFat(e.target.value)} placeholder="مثال: 15" min="1" max="70" className={inputClass} />
+          <label className={labelClass}>{t('bmr_bf')}</label>
+          <input type="number" value={bodyFat} onChange={e => setBodyFat(e.target.value)} placeholder={t('bmr_bf_pl')} min="1" max="70" className={inputClass} />
         </div>
 
         {error && <div className="rounded-lg border border-red-800 bg-red-900/30 p-3 text-center text-sm text-red-300">{error}</div>}
 
         <button type="submit" className="w-full cursor-pointer rounded-lg bg-rmared-600 px-6 py-4 text-lg font-bold text-white shadow-lg shadow-rmared-600/25 transition hover:bg-rmared-500 active:scale-[0.98]">
-          احسب 🔥
+          {t('bmr_btn')}
         </button>
       </form>
 
       {result && (
         <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 md:p-6">
-          <h2 className="text-center text-lg font-bold text-rmared-500">النتائج</h2>
+          <h2 className="text-center text-lg font-bold text-rmared-500">{t('bmr_results')}</h2>
 
           <div className="rounded-lg bg-zinc-800/50 p-4">
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400">الطريقة المستخدمة:</span>
+              <span className="text-zinc-400">{t('bmr_method')}</span>
               <span className="font-bold text-rmared-400">{result.method}</span>
             </div>
             {result.lbm && (
               <div className="mt-1 flex items-center justify-between">
-                <span className="text-zinc-400">كتلة الجسم النحيل (LBM):</span>
-                <span className="font-bold text-zinc-100">{result.lbm} كجم</span>
+                <span className="text-zinc-400">{t('bmr_lbm')}</span>
+                <span className="font-bold text-zinc-100">{result.lbm} kg</span>
               </div>
             )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-lg bg-zinc-800/50 p-4 text-center">
-              <p className="text-sm text-zinc-400">BMR</p>
+              <p className="text-sm text-zinc-400">{t('bmr_title')}</p>
               <p className="text-3xl font-bold text-rmared-400">{result.bmr}</p>
               <p className="text-xs text-zinc-500">kcal/day</p>
             </div>
             <div className="rounded-lg bg-zinc-800/50 p-4 text-center">
               <p className="text-sm text-zinc-400">TDEE</p>
               <p className="text-3xl font-bold text-green-400">{result.tdee}</p>
-              <p className="text-xs text-zinc-500">kcal/day (معامل {result.activityFactor})</p>
+              <p className="text-xs text-zinc-500">kcal/day ({t('bmr_activity')} {result.activityFactor})</p>
             </div>
           </div>
 
           <div className="rounded-lg bg-zinc-800/50 p-4">
-            <h3 className="mb-3 text-sm font-bold text-zinc-300">شرح خطوات الحساب</h3>
+            <h3 className="mb-3 text-sm font-bold text-zinc-300">{t('bmr_steps')}</h3>
             <ul className="space-y-1 text-xs text-zinc-400">
-              <li>1. المعادلة: {result.method}</li>
-              {result.lbm && <li>2. LBM = {weight} × (1 - {bodyFat}/100) = {result.lbm} كجم</li>}
-              <li>2. BMR = {result.bmr} kcal/day</li>
-              <li>3. معامل النشاط: {result.activityFactor} ({result.activityLabel})</li>
-              <li>4. TDEE = {result.bmr} × {result.activityFactor} = {result.tdee} kcal/day</li>
+              <li>{t('bmr_step1')} {result.method}</li>
+              {result.lbm && <li>{t('bmr_step2')} {weight} × (1 - {bodyFat}/100) = {result.lbm} kg</li>}
+              <li>{t('bmr_step3')} {result.activityFactor} ({result.activityLabel})</li>
+              <li>{t('bmr_step4')} {result.bmr} × {result.activityFactor} = {result.tdee} kcal/day</li>
             </ul>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-lg border border-red-800/40 bg-red-900/15 p-4">
-              <h3 className="mb-2 text-sm font-bold text-rmared-400">🔥 لخسارة الوزن</h3>
-              <p className="flex justify-between text-sm"><span>عجز 15%:</span> <span className="font-bold text-zinc-100">{result.fatLoss15} kcal/day</span></p>
-              <p className="flex justify-between text-sm"><span>عجز 20%:</span> <span className="font-bold text-zinc-100">{result.fatLoss20} kcal/day</span></p>
-              <p className="mt-2 text-xs text-zinc-500">TDEE × 0.85 و TDEE × 0.80</p>
+              <h3 className="mb-2 text-sm font-bold text-rmared-400">{t('bmr_fat_loss')}</h3>
+              <p className="flex justify-between text-sm"><span>{t('bmr_deficit15')}</span> <span className="font-bold text-zinc-100">{result.fatLoss15} kcal/day</span></p>
+              <p className="flex justify-between text-sm"><span>{t('bmr_deficit20')}</span> <span className="font-bold text-zinc-100">{result.fatLoss20} kcal/day</span></p>
+              <p className="mt-2 text-xs text-zinc-500">TDEE × 0.85 &amp; TDEE × 0.80</p>
             </div>
             <div className="rounded-lg border border-green-800/40 bg-green-900/15 p-4">
-              <h3 className="mb-2 text-sm font-bold text-green-400">💪 لبناء العضلات</h3>
-              <p className="flex justify-between text-sm"><span>فائض 10%:</span> <span className="font-bold text-zinc-100">{result.gain10} kcal/day</span></p>
-              <p className="flex justify-between text-sm"><span>فائض 15%:</span> <span className="font-bold text-zinc-100">{result.gain15} kcal/day</span></p>
-              <p className="mt-2 text-xs text-zinc-500">TDEE × 1.10 و TDEE × 1.15</p>
+              <h3 className="mb-2 text-sm font-bold text-green-400">{t('bmr_muscle_gain')}</h3>
+              <p className="flex justify-between text-sm"><span>{t('bmr_surplus10')}</span> <span className="font-bold text-zinc-100">{result.gain10} kcal/day</span></p>
+              <p className="flex justify-between text-sm"><span>{t('bmr_surplus15')}</span> <span className="font-bold text-zinc-100">{result.gain15} kcal/day</span></p>
+              <p className="mt-2 text-xs text-zinc-500">TDEE × 1.10 &amp; TDEE × 1.15</p>
             </div>
           </div>
         </div>

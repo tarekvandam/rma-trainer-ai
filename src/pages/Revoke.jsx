@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { revokeSubscription } from '../lib/plan'
+import { useLang } from '../lib/lang'
 
 const ADMIN_PASS = 'rma2025'
 
 export default function Revoke() {
-  const [step, setStep] = useState('password') // password | revoke | done
+  const { t } = useLang()
+  const [step, setStep] = useState('password')
   const [pass, setPass] = useState('')
   const [email, setEmail] = useState('')
   const [msg, setMsg] = useState('')
@@ -16,22 +18,22 @@ export default function Revoke() {
       setStep('revoke')
       setMsg('')
     } else {
-      setMsg('كلمة السر خطأ')
+      setMsg(t('rev_error_pass'))
     }
   }
 
   const handleRevoke = async (e) => {
     e.preventDefault()
     setMsg('')
-    if (!email.trim()) { setMsg('ادخل الإيميل'); return }
+    if (!email.trim()) { setMsg(t('rev_error_email')); return }
     setLoading(true)
     try {
       await revokeSubscription(email.trim())
-      setMsg(`✓ تم إلغاء اشتراك ${email.trim()} بنجاح`)
+      setMsg(t('rev_success', { email: email.trim() }))
       setEmail('')
       setStep('done')
     } catch {
-      setMsg('✕ فشل إلغاء الاشتراك — حاول مرة أخرى')
+      setMsg(t('rev_error_revoke'))
     }
     setLoading(false)
   }
@@ -41,16 +43,16 @@ export default function Revoke() {
   return (
     <div className="animate-fade-in mx-auto max-w-md space-y-6 pt-8">
       <div className="text-center">
-        <h1 className="text-2xl font-bold md:text-3xl">إلغاء الاشتراك</h1>
-        <p className="mt-1 text-zinc-400">إلغاء اشتراك Pro لأي مستخدم</p>
+        <h1 className="text-2xl font-bold md:text-3xl">{t('rev_title')}</h1>
+        <p className="mt-1 text-zinc-400">{t('rev_subtitle')}</p>
       </div>
 
       {step === 'password' && (
         <form onSubmit={checkPass} className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-          <h2 className="text-lg font-bold text-rmared-500">تأكيد الدخول</h2>
-          <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="كلمة سر الأدمن" className={inputClass} dir="ltr" />
+          <h2 className="text-lg font-bold text-rmared-500">{t('rev_confirm')}</h2>
+          <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder={t('rev_pass')} className={inputClass} dir="ltr" />
           <button type="submit" className="w-full cursor-pointer rounded-lg bg-rmared-600 py-3 font-bold text-white transition hover:bg-rmared-500">
-            دخول
+            {t('rev_enter')}
           </button>
           {msg && <p className="text-center text-sm text-red-400">{msg}</p>}
         </form>
@@ -58,10 +60,10 @@ export default function Revoke() {
 
       {step === 'revoke' && (
         <form onSubmit={handleRevoke} className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-          <h2 className="text-lg font-bold text-rmared-500">إلغاء اشتراك Pro</h2>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="الإيميل" className={inputClass} dir="ltr" />
+          <h2 className="text-lg font-bold text-rmared-500">{t('rev_revoke_title')}</h2>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('rev_email')} className={inputClass} dir="ltr" />
           <button type="submit" disabled={loading} className="w-full cursor-pointer rounded-lg bg-red-700 py-3 font-bold text-white transition hover:bg-red-600 disabled:opacity-50">
-            {loading ? 'جاري الإلغاء...' : 'إلغاء الاشتراك'}
+            {loading ? t('rev_loading') : t('rev_btn')}
           </button>
           {msg && <p className="text-center text-sm text-green-400">{msg}</p>}
         </form>
@@ -72,7 +74,7 @@ export default function Revoke() {
           <div className="text-4xl">✅</div>
           <p className="text-green-400">{msg}</p>
           <button onClick={() => { setStep('revoke'); setMsg('') }} className="cursor-pointer rounded-lg bg-zinc-700 px-6 py-3 font-bold text-white transition hover:bg-zinc-600">
-            إلغاء اشتراك آخر
+            {t('rev_another')}
           </button>
         </div>
       )}
