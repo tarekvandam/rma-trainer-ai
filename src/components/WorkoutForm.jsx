@@ -14,14 +14,15 @@ const levels = [
   { value: 'advanced', label: 'متقدم' },
 ]
 
-const equipmentList = [
-  { value: 'none', label: 'بدون أجهزة' },
-  { value: 'dumbbells', label: 'دمبلز' },
+const equipmentItems = [
+  { value: 'dumbbell', label: 'دمبل' },
   { value: 'barbell', label: 'بار' },
+  { value: 'pullup_bar', label: 'عقلة' },
+  { value: 'bench', label: 'كرسي/بنش' },
+  { value: 'step', label: 'استيب' },
   { value: 'kettlebell', label: 'كيتبل' },
-  { value: 'resistance_bands', label: 'أشرطة مقاومة' },
-  { value: 'pullup_bar', label: 'بار عقلة' },
-  { value: 'full_gym', label: 'جيم كامل' },
+  { value: 'resistance_bands', label: 'باند مقاومة' },
+  { value: 'cable', label: 'كابل' },
 ]
 
 const trainingTypes = [
@@ -45,13 +46,23 @@ export default function WorkoutForm({ onSubmit, loading }) {
     goal: 'general',
     level: 'beginner',
     days: '3',
-    equipment: 'none',
+    equipment: [],
     trainingType: 'general',
   })
   const [error, setError] = useState('')
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const toggleEquipment = (value) => {
+    const current = form.equipment
+    const idx = current.indexOf(value)
+    if (idx >= 0) {
+      setForm({ ...form, equipment: current.filter(v => v !== value) })
+    } else {
+      setForm({ ...form, equipment: [...current, value] })
+    }
   }
 
   const handleSubmit = (e) => {
@@ -120,10 +131,29 @@ export default function WorkoutForm({ onSubmit, loading }) {
           </select>
         </div>
         <div className="md:col-span-2">
-          <label className={labelClass}>المعدات المتاحة</label>
-          <select name="equipment" value={form.equipment} onChange={handleChange} className={selectClass}>
-            {equipmentList.map((e) => <option key={e.value} value={e.value}>{e.label}</option>)}
-          </select>
+          <label className={labelClass}>المعدات المتاحة (اختر كل اللي عندك)</label>
+          <div className="flex flex-wrap gap-2">
+            {equipmentItems.map((item) => {
+              const checked = form.equipment.includes(item.value)
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => toggleEquipment(item.value)}
+                  className={`cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    checked
+                      ? 'border-rmared-500 bg-rmared-600/20 text-rmared-400'
+                      : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500'
+                  }`}
+                >
+                  {checked ? '✓ ' : ''}{item.label}
+                </button>
+              )
+            })}
+            {form.equipment.length === 0 && (
+              <span className="text-sm text-zinc-500">(بدون أجهزة — تمارين وزن الجسم)</span>
+            )}
+          </div>
         </div>
       </div>
 

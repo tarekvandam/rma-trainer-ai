@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
-import { loadPublicCodes, checkAllExpired, getPlan, activatePro, getRequestStatus, syncRequestsCloud } from './lib/plan'
+import { loadPublicCodes, checkAllExpired, getPlan, activatePro, getRequestStatus, syncRequestsCloud, incrementVisitorCount } from './lib/plan'
 import { getLocalSession } from './lib/auth'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -14,11 +14,16 @@ import Dashboard from './pages/Dashboard'
 import AdminLogin from './pages/AdminLogin'
 import Admin from './pages/Admin'
 import Revoke from './pages/Revoke'
+import BMCalculator from './pages/BMCalculator'
 
 export default function App() {
   useEffect(() => {
     loadPublicCodes()
     checkAllExpired()
+    if (!sessionStorage.getItem('rma_visited')) {
+      incrementVisitorCount()
+      sessionStorage.setItem('rma_visited', '1')
+    }
     const interval = setInterval(checkAllExpired, 60000)
     const codesInterval = setInterval(loadPublicCodes, 30000)
     const approvalInterval = setInterval(async () => {
@@ -57,6 +62,7 @@ export default function App() {
             <Route path="/admin" element={<AdminLogin />} />
             <Route path="/admin/panel" element={<Admin />} />
             <Route path="/revoke" element={<Revoke />} />
+            <Route path="/bmr" element={<BMCalculator />} />
           </Route>
         </Routes>
       </AuthProvider>

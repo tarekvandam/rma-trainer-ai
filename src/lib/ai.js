@@ -41,8 +41,11 @@ export async function generateWorkoutPlan(formData) {
 
   const goalText = { fat_loss: 'حرق دهون', muscle_gain: 'بناء عضلات', endurance: 'تحمل قتالي', strength: 'قوة', general: 'لياقة عامة' }
   const levelText = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }
-  const equipText = { none: 'بدون أجهزة (bodyweight فقط)', dumbbells: 'دمبلز', barbell: 'بار ودمبلز', kettlebell: 'كيتبل بيل', resistance_bands: 'أشرطة مقاومة', pullup_bar: 'بار عقلة ودمبلز', full_gym: 'جيم كامل (كل الأجهزة)' }
+  const equipText = { none: 'بدون أجهزة (bodyweight فقط)', dumbbell: 'دمبل', barbell: 'بار', pullup_bar: 'عقلة', bench: 'كرسي/بنش', step: 'استيب', kettlebell: 'كيتبل', resistance_bands: 'باند مقاومة', cable: 'كابل' }
   const typeText = { mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', general: 'لياقة عامة' }
+
+  const equipList = Array.isArray(equipment) ? equipment : equipment ? [equipment] : ['none']
+  const equipDisplay = equipList.map(e => equipText[e] || e).join(', ') || 'بدون أجهزة'
 
   const userPrompt = `اصنع خطة تدريب شخصية جدا للشخص التالي:
 - الاسم: ${name || 'مستخدم'}
@@ -52,7 +55,7 @@ export async function generateWorkoutPlan(formData) {
 - الهدف: ${goalText[goal] || goal}
 - المستوى: ${levelText[level] || level}
 - أيام التمرين: ${days} يوم في الأسبوع
-- المعدات المتاحة: ${equipText[equipment] || equipment}
+- المعدات المتاحة: ${equipDisplay}
 - نوع التدريب: ${typeText[trainingType] || trainingType}
 
 مهم جدا: وزع التمارين بالكامل على ${days} أيام. كل يوم له 4-6 تمارين محددة + تمرين كارديو واحد بمدة محددة بالدقائق (durationMinutes).
@@ -100,7 +103,8 @@ function getFallbackPlan(form) {
   const days = parseInt(form.days) || 3
   const goal = form.goal || 'general'
   const level = form.level || 'beginner'
-  const equipment = form.equipment || 'none'
+  const equipRaw = form.equipment || []
+  const equipList = Array.isArray(equipRaw) ? equipRaw : equipRaw ? [equipRaw] : []
   const trainingType = form.trainingType || 'general'
 
   const bmr = Math.round(10 * w + 6.25 * h - 5 * a + 5)
@@ -123,17 +127,17 @@ function getFallbackPlan(form) {
       { name: 'متسلق الجبال (Mountain Climbers)', defSets: 3, defReps: '30 ث', defRest: '20 ث' },
       { name: 'تمدد ظهر (Cobra Stretch)', defSets: 2, defReps: '30 ث', defRest: '15 ث' },
     ],
-    dumbbells: [
-      { name: 'دمبلز بنش برس (Dumbbell Bench Press)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'دمبلز ضغط كتف (Shoulder Press)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'دمبلز رف (Dumbbell Rows)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'دمبلز بايسبس (Bicep Curls)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'دمبلز ترايسبس خلف الرأس (Overhead Ext)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'دمبلز قرفصاء (Goblet Squats)', defSets: 4, defReps: '10-15', defRest: '90 ث' },
-      { name: 'دمبلز اندفاع (Lunges)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
-      { name: 'دمبلز روسيان تويست (Russian Twist)', defSets: 3, defReps: '16-20', defRest: '30 ث' },
-      { name: 'دمبلز ثراستر (Thrusters)', defSets: 3, defReps: '10-12', defRest: '60 ث' },
-      { name: 'دمبلز رفع سمانة (Calf Raises)', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+    dumbbell: [
+      { name: 'دمبل بنش برس (Dumbbell Bench Press)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'دمبل ضغط كتف (Shoulder Press)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'دمبل رف (Dumbbell Rows)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'دمبل بايسبس (Bicep Curls)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'دمبل ترايسبس خلف الرأس (Overhead Ext)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'دمبل قرفصاء (Goblet Squats)', defSets: 4, defReps: '10-15', defRest: '90 ث' },
+      { name: 'دمبل اندفاع (Lunges)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'دمبل روسيان تويست (Russian Twist)', defSets: 3, defReps: '16-20', defRest: '30 ث' },
+      { name: 'دمبل ثراستر (Thrusters)', defSets: 3, defReps: '10-12', defRest: '60 ث' },
+      { name: 'دمبل رفع سمانة (Calf Raises)', defSets: 4, defReps: '15-20', defRest: '30 ث' },
     ],
     barbell: [
       { name: 'بار بنش برس (Bench Press)', defSets: 5, defReps: '8-10', defRest: '90 ث' },
@@ -169,26 +173,55 @@ function getFallbackPlan(form) {
       { name: 'عقلة أسترالية (Australian Rows)', defSets: 3, defReps: '12-15', defRest: '60 ث' },
       { name: 'عقلة مثلث (V-Grip Pull-ups)', defSets: 3, defReps: '8-10', defRest: '60 ث' },
       { name: 'رفع رجلين معلق (Hanging Leg Raises)', defSets: 3, defReps: '10-15', defRest: '45 ث' },
-      { name: 'قرفصاء هواء (Bodyweight Squats)', defSets: 3, defReps: '20-25', defRest: '60 ث' },
-      { name: 'تمرين الضغط (Push-ups)', defSets: 3, defReps: '15-20', defRest: '45 ث' },
     ],
-    full_gym: [
-      { name: 'بار بنش برس (Barbell Bench Press)', defSets: 5, defReps: '8-12', defRest: '90 ث' },
-      { name: 'سحب علوي (Lat Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'سميث مشين قرفصاء (Squats)', defSets: 5, defReps: '8-12', defRest: '2 د' },
-      { name: 'دامبلز ضغط كتف (DB Shoulder Press)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'ليغ برس (Leg Press)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
-      { name: 'بار رف ميت (Deadlifts)', defSets: 4, defReps: '6-10', defRest: '2-3 د' },
-      { name: 'بار بايسبس (Barbell Curls)', defSets: 3, defReps: '10-12', defRest: '45 ث' },
+    bench: [
+      { name: 'انخفاض كرسي (Bench Dips)', defSets: 3, defReps: '12-18', defRest: '45 ث' },
+      { name: 'بنش برس (Bench Press — لو النش متوفر)', defSets: 4, defReps: '10-12', defRest: '90 ث' },
+      { name: 'قرفصاء بالكرسي (Bulgarian Split Squats)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'رفع رجلين على كرسي (Leg Raises on Bench)', defSets: 3, defReps: '12-15', defRest: '30 ث' },
+      { name: 'اندفاع خلفي بالكرسي (Reverse Lunges)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+    ],
+    step: [
+      { name: 'صعود استيب (Step-ups)', defSets: 3, defReps: '12-15 لكل رجل', defRest: '60 ث' },
+      { name: 'نط على استيب (Box Jumps)', defSets: 3, defReps: '8-12', defRest: '60 ث' },
+      { name: 'اندفاع استيب (Step-back Lunges)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'صعود استيب بدمبل (Weighted Step-ups)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'تمارين هوائية على استيب (Step Aerobics)', defSets: 3, defReps: '30 ث', defRest: '15 ث' },
+    ],
+    cable: [
       { name: 'كابل ترايسبس (Cable Pushdowns)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
       { name: 'كابل كرانش (Cable Crunches)', defSets: 3, defReps: '15-20', defRest: '30 ث' },
-      { name: 'مشين صدر (Machine Chest Fly)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'مشين كتف جانبي (Lateral Raise)', defSets: 4, defReps: '12-15', defRest: '45 ث' },
-      { name: 'رفع سمانة واقف (Standing Calf Raises)', defSets: 4, defReps: '12-15', defRest: '30 ث' },
+      { name: 'كابل فلای صدر (Cable Chest Fly)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'كابل رف (Cable Rows)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'كابل بايسبس (Cable Bicep Curls)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'كابل كتف جانبي (Cable Lateral Raise)', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     ],
   }
 
-  const pool = exercisePools[equipment] || exercisePools.none
+  // Merge pools from selected equipment (always include none/bodyweight as base)
+  const selectedEquip = equipList.length > 0 ? equipList : ['none']
+  const seen = new Set()
+  const mergedPool = []
+  selectedEquip.forEach(eq => {
+    const pool = exercisePools[eq] || []
+    pool.forEach(ex => {
+      if (!seen.has(ex.name)) {
+        seen.add(ex.name)
+        mergedPool.push(ex)
+      }
+    })
+  })
+  // Always include bodyweight as base if more pools exist
+  if (selectedEquip.length > 1 && !selectedEquip.includes('none')) {
+    exercisePools.none.forEach(ex => {
+      if (!seen.has(ex.name)) {
+        seen.add(ex.name)
+        mergedPool.push(ex)
+      }
+    })
+  }
+
+  const pool = mergedPool.length > 0 ? mergedPool : exercisePools.none
 
   // Adjust reps/rest based on goal
   const adjust = (ex) => {

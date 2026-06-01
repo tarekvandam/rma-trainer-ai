@@ -1,6 +1,14 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { getVisitorCount } from '../lib/plan'
 
 export default function Home() {
+  const [visitors, setVisitors] = useState(0)
+
+  useEffect(() => {
+    getVisitorCount().then(setVisitors)
+  }, [])
+
   return (
     <div className="animate-fade-in space-y-8">
       <div className="flex flex-col items-center gap-4 pt-8 text-center">
@@ -26,6 +34,12 @@ export default function Home() {
         >
           عرفني على الباقات
         </Link>
+        <Link
+          to="/bmr"
+          className="inline-block w-full max-w-xs rounded-lg border border-zinc-700 px-8 py-3 text-center font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-zinc-100"
+        >
+          حاسبة السعرات 🔥
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -46,6 +60,10 @@ export default function Home() {
         <p className="text-sm text-zinc-500">
           RMA Trainer AI — فلسفة تدريبية واقعية. لا معجزات، فقط عمل شيق ومنهجية.
         </p>
+      </div>
+
+      <div className="text-center text-xs text-zinc-600">
+        عدد الزوار: <span className="font-bold text-zinc-400" dir="ltr">{visitors.toLocaleString()}</span>
       </div>
     </div>
   )

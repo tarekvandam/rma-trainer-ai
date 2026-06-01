@@ -16,6 +16,7 @@ export default function Navbar() {
   const links = [
     { to: '/', label: 'الرئيسية' },
     { to: '/generator', label: 'المولد' },
+    { to: '/bmr', label: 'BMR' },
     { to: '/pricing', label: 'الباقات' },
     { to: session ? '/dashboard' : '/login', label: session ? 'حسابي' : 'دخول' },
   ]

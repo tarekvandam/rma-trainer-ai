@@ -508,6 +508,29 @@ export async function syncVideosCloud() {
   }
 }
 
+// Visitor counter
+export async function incrementVisitorCount() {
+  let count = 0
+  try {
+    const cloud = await supabaseGet('visitor_count')
+    if (typeof cloud === 'number') count = cloud
+  } catch { /* first visit */ }
+  count++
+  await supabaseSet('visitor_count', count)
+  localStorage.setItem('rma_visitor_count', JSON.stringify(count))
+  return count
+}
+
+export async function getVisitorCount() {
+  try {
+    const cloud = await supabaseGet('visitor_count')
+    if (typeof cloud === 'number') return cloud
+  } catch { /* ignore */ }
+  try {
+    return JSON.parse(localStorage.getItem('rma_visitor_count')) || 0
+  } catch { return 0 }
+}
+
 export function checkAllExpired() {
   const plan = getPlan() // triggers expiry check
   // Also check all stored users for expiry
