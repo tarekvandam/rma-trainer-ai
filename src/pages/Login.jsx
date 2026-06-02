@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { localSignUp, localSignIn } from '../lib/auth'
 import { useLang } from '../lib/lang'
 
@@ -34,7 +34,7 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="email" placeholder={t('li_email')} value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} required />
+          <input type="text" placeholder={t('li_email')} value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} required />
           <input type="password" placeholder={t('li_password')} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} required minLength={6} />
           <button type="submit" className="w-full cursor-pointer rounded-lg bg-rmared-600 px-6 py-3 font-bold text-white transition hover:bg-rmared-500">
             {isSignUp ? t('li_btn_reg') : t('li_btn')}
@@ -47,12 +47,18 @@ export default function Login() {
           </p>
         )}
 
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="block w-full text-center text-sm text-zinc-400 underline transition hover:text-zinc-200"
-        >
-          {isSignUp ? `${t('li_have_account')} — ${t('li_login')}` : `${t('li_no_account')} — ${t('li_register')}`}
-        </button>
+          {!isSignUp && (
+            <Link to="/forgot-password" className="block text-center text-sm text-zinc-500 underline transition hover:text-zinc-200">
+              {t('fp_title')}
+            </Link>
+          )}
+
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="block w-full text-center text-sm text-zinc-400 underline transition hover:text-zinc-200"
+          >
+            {isSignUp ? `${t('li_have_account')} — ${t('li_login')}` : `${t('li_no_account')} — ${t('li_register')}`}
+          </button>
       </div>
     </div>
   )

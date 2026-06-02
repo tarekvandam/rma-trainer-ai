@@ -1,7 +1,7 @@
 const API_KEY = import.meta.env.VITE_OPENROUTER_KEY
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
-const SYSTEM_PROMPT = `أنت مدرب RMA Trainer AI — خبير في الفنون القتالية المختلطة واللياقة البدنية.
+const SYSTEM_PROMPT = `أنت مدرب RMA Trainer AI — خبير في الفنون القتالية المختلطة واللياقة البدنية وتمارين الجيم.
 مهمتك: توليد خطة تدريب مفصلة وشخصية 100% حسب بيانات المستخدم.
 
 قواعد صارمة:
@@ -11,6 +11,14 @@ const SYSTEM_PROMPT = `أنت مدرب RMA Trainer AI — خبير في الفن
 - المستوى يحدد التعقيد والشدة
 - الهدف يحدد نوع التمارين (حرق دهون = تكرارات عالية، قوة = أوزان ثقيلة)
 - نوع التدريب يحدد الحركات (MMA = حركات وظيفية، ملاكمة = تركيز على الانفجار)
+- إذا كان نوع التدريب "جيم (معدات كاملة)": استخدم تمارين جيم حقيقية (بنش بريس، سكوات، ديدليفت، etc) مع تقسيمة منظمة حسب الأيام (Push/Pull/Legs أو Upper/Lower أو Full Body)
+
+تقسيمات الجيم المقترحة حسب عدد الأيام:
+- يومان: Full Body 2x
+- 3 أيام: Push / Pull / Legs
+- 4 أيام: Upper / Lower / Push / Pull أو Upper / Lower 2x
+- 5 أيام: Push / Pull / Legs / Upper / Lower
+- 6 أيام: Push / Pull / Legs / Push / Pull / Legs
 
 الأهم: وزع التمارين على الأيام حسب عدد أيام التمرين. كل يوم له تمارينه المحددة.
 
@@ -34,7 +42,7 @@ const SYSTEM_PROMPT = `أنت مدرب RMA Trainer AI — خبير في الفن
   "tips": ["نصيحة 1", "نصيحة 2", "نصيحة 3", "نصيحة 4", "نصيحة 5"]
 }`
 
-const SYSTEM_PROMPT_ENG = `You are RMA Trainer AI — an expert in martial arts and fitness.
+const SYSTEM_PROMPT_ENG = `You are RMA Trainer AI — an expert in martial arts, fitness, and gym training.
 Your mission: Generate a detailed, 100% personalized training plan based on user data.
 
 Strict rules:
@@ -44,6 +52,14 @@ Strict rules:
 - Level determines complexity and intensity
 - Goal determines exercise type (fat loss = high reps, strength = heavy weights)
 - Training type determines movements (MMA = functional movements, boxing = explosive focus)
+- If training type is "Gym (Full Equipment)": use real gym exercises (bench press, squat, deadlift, etc) with organized splits based on days (Push/Pull/Legs, Upper/Lower, or Full Body)
+
+Recommended gym splits by days:
+- 2 days: Full Body x2
+- 3 days: Push / Pull / Legs
+- 4 days: Upper / Lower / Push / Pull or Upper / Lower x2
+- 5 days: Push / Pull / Legs / Upper / Lower
+- 6 days: Push / Pull / Legs / Push / Pull / Legs
 
 Most important: Distribute exercises across all training days. Each day has its own specific exercises.
 
@@ -279,6 +295,38 @@ function getFallbackPlan(form, lang = 'ar') {
       { name: 'كابل بايسبس (Cable Bicep Curls)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
       { name: 'كابل كتف جانبي (Cable Lateral Raise)', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     ],
+    gym_machine: [
+      { name: 'جهاز صدر (Chest Press Machine)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'جهاز سحب علوي (Lat Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'جهاز دفع أرجل (Leg Press Machine)', defSets: 5, defReps: '10-15', defRest: '90 ث' },
+      { name: 'جهاز تمديد رجل (Leg Extension)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'جهاز ثني رجل (Leg Curl)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'جهاز كتف (Shoulder Press Machine)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'جهاز ظهر (Seated Row Machine)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'جهاز صدر فراشة (Pec Deck Fly)', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+    ],
+    leg_press: [
+      { name: 'ليج بريس (Leg Press)', defSets: 5, defReps: '10-15', defRest: '90 ث' },
+      { name: 'سمانة على ليج بريس (Calf Raises on Leg Press)', defSets: 5, defReps: '15-20', defRest: '45 ث' },
+      { name: 'ليج بريس برجل واحدة (Single Leg Press)', defSets: 4, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'ليج بريس مائل (Incline Leg Press)', defSets: 4, defReps: '12-15', defRest: '90 ث' },
+      { name: 'هوريزونتال ليج بريس (Horizontal Leg Press)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+    ],
+    lat_pulldown: [
+      { name: 'لات بول داون أمامي (Front Lat Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'لات بول داون خلفي (Behind Neck Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'قبضة عكسية لات (Reverse Grip Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'قبضة ضيقة لات (V-Grip Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'سحب كابل وجه (Face Pull)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+    ],
+    smith_machine: [
+      { name: 'سميث مشين سكوات (Smith Machine Squat)', defSets: 5, defReps: '8-10', defRest: '90 ث' },
+      { name: 'سميث مشين بنش (Smith Machine Bench Press)', defSets: 4, defReps: '8-10', defRest: '90 ث' },
+      { name: 'سميث مشين كتف (Smith Machine Shoulder Press)', defSets: 4, defReps: '8-10', defRest: '60 ث' },
+      { name: 'سميث مشين اندفاع (Smith Machine Lunges)', defSets: 4, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'سميث مشين رومانيان (Smith Machine RDL)', defSets: 4, defReps: '10-12', defRest: '90 ث' },
+      { name: 'سميث مشين سمّانة (Smith Machine Calf Raises)', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+    ],
   }
 
   const exercisePoolsEN = {
@@ -364,6 +412,38 @@ function getFallbackPlan(form, lang = 'ar') {
       { name: 'Cable Rows', defSets: 4, defReps: '10-12', defRest: '60 ث' },
       { name: 'Cable Bicep Curls', defSets: 3, defReps: '12-15', defRest: '45 ث' },
       { name: 'Cable Lateral Raise', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+    ],
+    gym_machine: [
+      { name: 'Chest Press Machine', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Lat Pulldown Machine', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Leg Press Machine', defSets: 5, defReps: '10-15', defRest: '90 ث' },
+      { name: 'Leg Extension', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'Leg Curl', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'Shoulder Press Machine', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Seated Row Machine', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Pec Deck Fly', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+    ],
+    leg_press: [
+      { name: 'Leg Press', defSets: 5, defReps: '10-15', defRest: '90 ث' },
+      { name: 'Calf Raises on Leg Press', defSets: 5, defReps: '15-20', defRest: '45 ث' },
+      { name: 'Single Leg Press', defSets: 4, defReps: '10-12 each leg', defRest: '60 ث' },
+      { name: 'Incline Leg Press', defSets: 4, defReps: '12-15', defRest: '90 ث' },
+      { name: 'Horizontal Leg Press', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+    ],
+    lat_pulldown: [
+      { name: 'Front Lat Pulldown', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Behind Neck Pulldown', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Reverse Grip Pulldown', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'V-Grip Pulldown', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Face Pull', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+    ],
+    smith_machine: [
+      { name: 'Smith Machine Squat', defSets: 5, defReps: '8-10', defRest: '90 ث' },
+      { name: 'Smith Machine Bench Press', defSets: 4, defReps: '8-10', defRest: '90 ث' },
+      { name: 'Smith Machine Shoulder Press', defSets: 4, defReps: '8-10', defRest: '60 ث' },
+      { name: 'Smith Machine Lunges', defSets: 4, defReps: '10-12 each leg', defRest: '60 ث' },
+      { name: 'Smith Machine RDL', defSets: 4, defReps: '10-12', defRest: '90 ث' },
+      { name: 'Smith Machine Calf Raises', defSets: 4, defReps: '15-20', defRest: '30 ث' },
     ],
   }
 
@@ -599,6 +679,7 @@ function getFallbackPlan(form, lang = 'ar') {
     taekwondo: { d1: 'ركلات عالية + مرونة', d2: 'أرجل + انفجار', d3: 'قوة انفجارية', d4: 'ركلات سريعة', d5: 'تحمل + ركلات', d6: 'كارديو تاي كون دو' },
     karate: { d1: 'لكمات أساسية + وقفات', d2: 'كاتا + حركات', d3: 'قوة انفجارية', d4: 'ركلات + لكمات', d5: 'سرعة + دقة', d6: 'تحمل كاراتيه' },
     wrestling: { d1: 'قوة كاملة', d2: 'انفجار + أرجل', d3: 'سحب + قلب', d4: 'قوة + تحمل', d5: 'أرجل + كارديو', d6: 'كارديو عالي' },
+    gym: { d1: 'دفع (صدر + كتف + ترايسبس)', d2: 'سحب (ظهر + بايسبس)', d3: 'أرجل (سكوات + ديدليفت)', d4: 'دفع + أكتاف', d5: 'سحب + أرجل', d6: 'تقسيمة كاملة' },
     general: { d1: 'دفع', d2: 'سحب', d3: 'أرجل', d4: 'أعلى جسم', d5: 'أسفل + قلب', d6: 'كارديو' },
   }
   const typeFocusEN = {
@@ -610,6 +691,7 @@ function getFallbackPlan(form, lang = 'ar') {
     taekwondo: { d1: 'High Kicks + Flexibility', d2: 'Legs + Explosion', d3: 'Explosive Strength', d4: 'Fast Kicks', d5: 'Endurance + Kicks', d6: 'Taekwondo Cardio' },
     karate: { d1: 'Basic Punches + Stances', d2: 'Kata + Movements', d3: 'Explosive Strength', d4: 'Kicks + Punches', d5: 'Speed + Precision', d6: 'Karate Endurance' },
     wrestling: { d1: 'Full Strength', d2: 'Explosion + Legs', d3: 'Pull + Core', d4: 'Strength + Endurance', d5: 'Legs + Cardio', d6: 'High Cardio' },
+    gym: { d1: 'Push (Chest + Shoulders + Triceps)', d2: 'Pull (Back + Biceps)', d3: 'Legs (Squats + Deadlifts)', d4: 'Push + Shoulders', d5: 'Pull + Legs', d6: 'Full Split' },
     general: { d1: 'Push', d2: 'Pull', d3: 'Legs', d4: 'Upper Body', d5: 'Lower Body + Core', d6: 'Cardio' },
   }
   const typeFocus = lang === 'en' ? typeFocusEN : typeFocusAR
@@ -700,8 +782,8 @@ function getFallbackPlan(form, lang = 'ar') {
     dailyCalories: lang === 'en' ? `${dailyCalories} cal/day` : `${dailyCalories} سعرة/يوم`,
     protein: lang === 'en' ? `${protein} g/day` : `${protein} جرام/يوم`,
     trainingType: lang === 'en'
-      ? ({ mma: 'MMA', boxing: 'Boxing', kickboxing: 'Kickboxing', bjj: 'Jiu-Jitsu', muay_thai: 'Muay Thai', taekwondo: 'Taekwondo', karate: 'Karate', wrestling: 'Wrestling', general: 'General Fitness' }[trainingType] || 'General Fitness')
-      : ({ mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة'),
+      ? ({ mma: 'MMA', boxing: 'Boxing', kickboxing: 'Kickboxing', bjj: 'Jiu-Jitsu', muay_thai: 'Muay Thai', taekwondo: 'Taekwondo', karate: 'Karate', wrestling: 'Wrestling', gym: 'Gym (Full Equipment)', general: 'General Fitness' }[trainingType] || 'General Fitness')
+      : ({ mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', gym: 'جيم (معدات كاملة)', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة'),
     tips: lang === 'en' ? tipsEN : tipsAR,
   }
 }

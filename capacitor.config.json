@@ -1,0 +1,15 @@
+{
+  "appId": "com.tarekvandam.rmatrainerai",
+  "appName": "RMA Trainer AI",
+  "webDir": "dist",
+  "server": {
+    "url": "https://rma-trainer-ai.vercel.app",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

@@ -17,6 +17,7 @@ export default function Dashboard() {
     ;(async () => {
       const s = getLocalSession()
       if (!s) { navigate('/login'); return }
+      if (s.email !== 'eng.tarek.sayed@gmail.com') { navigate('/'); return }
       setSession(s)
       const st = await getRequestStatus(s.email)
       if (st === 'revoked') { setStatus('revoked'); return }

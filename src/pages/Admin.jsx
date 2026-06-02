@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../lib/lang'
-import { getRequests, getRequestsLocal, approveRequest, rejectRequest, submitProRequest, revokeSubscription, deleteRequest, syncCodesToCloud, loadPublicCodes, syncRequestsCloud, clearUnusedCodes, getActiveProUsers, saveVideosCloud } from '../lib/plan'
+import { getRequests, getRequestsLocal, approveRequest, rejectRequest, submitProRequest, revokeSubscription, deleteRequest, syncCodesToCloud, loadPublicCodes, syncRequestsCloud, clearUnusedCodes, getActiveProUsers, saveVideosCloud, loadAds, syncAdsCloud, publishAdsToCloud, getRegisteredUsers, setUserExpiry, getNotifications, sendNotification, deleteNotificationByMessage, clearAllNotifications } from '../lib/plan'
 import { publishPricingPlans } from '../lib/pricing-sync'
 
 async function fetchCodesWithSupabase() {
@@ -75,6 +75,18 @@ export default function Admin() {
   const [editingPlan, setEditingPlan] = useState(null)
   const [planForm, setPlanForm] = useState({ name: '', goal: '', level: '', days: 3 })
   const [planDays, setPlanDays] = useState([{ day: t('plan_default_day_1'), focus: '', exercises: [{ name: '', sets: 3, reps: '10', rest: '60 ث' }] }])
+  const [ads, setAds] = useState(() => loadAds())
+  const [users, setUsers] = useState([])
+  const [showAdForm, setShowAdForm] = useState(false)
+  const [editingAd, setEditingAd] = useState(null)
+  const [adForm, setAdForm] = useState({ name: '', type: 'banner', imageUrl: '', videoUrl: '', linkUrl: '', position: 'home_middle', order: 1, active: true, width: '', height: '' })
+  const [notifMessage, setNotifMessage] = useState('')
+  const [notifTargetType, setNotifTargetType] = useState('all')
+  const [notifTargetEmail, setNotifTargetEmail] = useState('')
+  const [notifSent, setNotifSent] = useState(false)
+  const [notifHistory, setNotifHistory] = useState([])
+  const [notifScheduledAt, setNotifScheduledAt] = useState('')
+  const [notifUseSchedule, setNotifUseSchedule] = useState(false)
 
   const tabs = [
     { id: 'dashboard', label: t('tab_dashboard') },
@@ -83,6 +95,9 @@ export default function Admin() {
     { id: 'requests', label: t('tab_requests') },
     { id: 'codes', label: t('tab_codes') },
     { id: 'videos', label: t('tab_videos') },
+    { id: 'ads', label: t('tab_ads') },
+    { id: 'users', label: t('tab_users') },
+    { id: 'notifications', label: t('tab_notifications') },
     { id: 'settings', label: t('tab_settings') },
   ]
 
@@ -104,6 +119,24 @@ export default function Admin() {
   useEffect(() => { saveToStorage('rma_videos', videos) }, [videos])
   useEffect(() => { saveToStorage('rma_custom_plans', plans) }, [plans])
   useEffect(() => { saveToStorage('rma_pricing_plans', pricingPlans) }, [pricingPlans])
+
+  useEffect(() => { if (ads.length > 0) publishAdsToCloud(ads) }, [ads])
+
+  useEffect(() => { if (activeTab === 'users') getRegisteredUsers().then(setUsers).catch(() => {}) }, [activeTab])
+
+  useEffect(() => {
+    if (activeTab === 'notifications') {
+      getNotifications().then(setNotifHistory).catch(() => {})
+      const interval = setInterval(() => getNotifications().then(fresh => {
+        setNotifHistory(prev => {
+          const prevMsgs = new Set(prev.map(x => x.message))
+          const added = fresh.filter(x => !prevMsgs.has(x.message))
+          return added.length > 0 ? [...added, ...prev] : prev
+        })
+      }).catch(() => {}), 5000)
+      return () => clearInterval(interval)
+    }
+  }, [activeTab])
 
   useEffect(() => {
     if (activeTab !== 'codes') return
@@ -777,6 +810,234 @@ export default function Admin() {
                 <button onClick={() => handleDeleteRequest(r.email)} className="mr-auto cursor-pointer rounded bg-red-900/50 px-2 py-1 text-xs text-red-400 transition hover:bg-red-800/70">{t('req_delete')}</button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'ads' && (
+        <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-rmared-500">{t('ads_title')}</h2>
+            <button onClick={() => { setEditingAd(null); setAdForm({ name: '', type: 'banner', imageUrl: '', videoUrl: '', linkUrl: '', position: 'home_middle', order: 1, active: true }); setShowAdForm(true) }} className="cursor-pointer rounded-lg bg-rmared-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-rmared-500">{t('ads_add')}</button>
+          </div>
+          {showAdForm && (
+            <div className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+              <h3 className="text-sm font-bold text-zinc-200">{editingAd ? t('ads_edit') : t('ads_new')}</h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                <input className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" placeholder={t('ads_name_pl')} value={adForm.name} onChange={e => setAdForm({ ...adForm, name: e.target.value })} />
+                <select className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" value={adForm.type} onChange={e => setAdForm({ ...adForm, type: e.target.value })}>
+                  <option value="banner">{t('ads_type_banner')}</option>
+                  <option value="video">{t('ads_type_video')}</option>
+                </select>
+                <input className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" placeholder={t('ads_image_url')} value={adForm.imageUrl} onChange={e => setAdForm({ ...adForm, imageUrl: e.target.value })} />
+                <input className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" placeholder={t('ads_video_url')} value={adForm.videoUrl} onChange={e => setAdForm({ ...adForm, videoUrl: e.target.value })} />
+                <input className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" placeholder={t('ads_link_url')} value={adForm.linkUrl} onChange={e => setAdForm({ ...adForm, linkUrl: e.target.value })} />
+                <input className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" placeholder={t('ads_width')} value={adForm.width || ''} onChange={e => setAdForm({ ...adForm, width: e.target.value })} />
+                <input className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" placeholder={t('ads_height')} value={adForm.height || ''} onChange={e => setAdForm({ ...adForm, height: e.target.value })} />
+                <select className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" value={adForm.position} onChange={e => setAdForm({ ...adForm, position: e.target.value })}>
+                  <option value="home_top">{t('ads_pos_top')}</option>
+                  <option value="home_left">{t('ads_pos_left')}</option>
+                  <option value="home_right">{t('ads_pos_right')}</option>
+                  <option value="home_middle">{t('ads_pos_middle')}</option>
+                  <option value="home_bottom">{t('ads_pos_bottom')}</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm text-zinc-400">
+                  <input type="checkbox" checked={adForm.active} onChange={e => setAdForm({ ...adForm, active: e.target.checked })} />
+                  {t('ads_active')}
+                </label>
+                <div className="flex-1" />
+                <button onClick={() => { setShowAdForm(false); setEditingAd(null) }} className="cursor-pointer rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 transition hover:text-zinc-200">{t('code_unused')}</button>
+                <button onClick={() => {
+                  const updated = editingAd
+                    ? ads.map(a => a === editingAd ? { ...adForm } : a)
+                    : [...ads, { ...adForm, order: ads.length + 1 }]
+                  setAds(updated)
+                  setShowAdForm(false)
+                  setEditingAd(null)
+                }} className="cursor-pointer rounded bg-rmared-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-rmared-500">{t('ads_save')}</button>
+              </div>
+            </div>
+          )}
+          {ads.length === 0 ? (
+            <p className="py-8 text-center text-sm text-zinc-500">{t('ads_no_ads')}</p>
+          ) : (
+            <div className="space-y-2">
+              {ads.map((ad, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
+                  <span className="text-xs text-zinc-500">{ad.order || i + 1}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-zinc-200">{ad.name || t('ads_unnamed')}</p>
+                    <p className="text-xs text-zinc-500">{ad.type} · {ad.position}</p>
+                  </div>
+                  <span className={`text-xs ${ad.active !== false ? 'text-green-500' : 'text-zinc-500'}`}>{ad.active !== false ? t('ads_active') : '—'}</span>
+                  <button onClick={() => { setEditingAd(ad); setAdForm({ ...ad }); setShowAdForm(true) }} className="cursor-pointer rounded border border-zinc-700 px-2 py-1 text-xs text-zinc-400 transition hover:text-zinc-200">{t('pricing_edit_title')}</button>
+                  <button onClick={() => { if (confirm(t('confirm_delete_ad'))) { setAds(ads.filter((_, j) => j !== i)) } }} className="cursor-pointer rounded border border-red-900 px-2 py-1 text-xs text-red-400 transition hover:bg-red-900/50">{t('req_delete')}</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-rmared-500">{t('tab_users')}</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-500">{users.length} {t('users_count_label')}</span>
+              <button onClick={() => getRegisteredUsers().then(setUsers).catch(() => {})} className="cursor-pointer rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:bg-zinc-700 hover:text-zinc-200">{t('req_refresh')}</button>
+            </div>
+          </div>
+          {users.length === 0 ? (
+            <p className="py-8 text-center text-sm text-zinc-500">{t('users_no_users')}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-700 text-left text-zinc-400">
+                    <th className="pb-2 pr-3">{'#'}</th>
+                    <th className="pb-2 pr-3">{t('req_email_pl')}</th>
+                    <th className="pb-2 pr-3">{t('users_registered_at')}</th>
+                    <th className="pb-2 pr-3">{t('tab_requests')}</th>
+                    <th className="pb-2">{t('pricing_expires')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u, i) => (
+                    <tr key={u.email} className="border-b border-zinc-800 text-zinc-300">
+                      <td className="py-2 pr-3 text-zinc-500">{i + 1}</td>
+                      <td className="py-2 pr-3">{u.email}</td>
+                      <td className="py-2 pr-3 text-zinc-400">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
+                      <td className="py-2 pr-3">
+                        <span className={`text-xs ${u.status === 'approved' ? 'text-green-500' : u.status === 'pending' ? 'text-yellow-500' : u.status === 'revoked' ? 'text-red-500' : 'text-zinc-500'}`}>
+                          {u.status || '—'}
+                        </span>
+                      </td>
+                      <td className="py-2 text-zinc-400">
+                        <div className="flex items-center gap-2">
+                          <input type="date" defaultValue={u.expiresAt ? new Date(u.expiresAt).toISOString().split('T')[0] : ''} onChange={e => { u._expiry = e.target.value }} className="w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200" />
+                          <button onClick={async () => {
+                            const val = u._expiry
+                            if (val) {
+                              await setUserExpiry(u.email, new Date(val).toISOString())
+                              alert('تم تحديث تاريخ انتهاء الاشتراك')
+                              getRegisteredUsers().then(setUsers).catch(() => {})
+                            }
+                          }} className="cursor-pointer rounded bg-rmared-600 px-2 py-1 text-xs text-white hover:bg-rmared-500">{t('ads_save')}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'notifications' && (
+        <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-rmared-500">{t('tab_notifications')}</h2>
+            {notifHistory.length > 0 && (
+              <button onClick={async () => {
+                if (confirm('مسح كل الإشعارات نهائياً؟')) {
+                  await clearAllNotifications()
+                  setNotifHistory([])
+                }
+              }} className="cursor-pointer rounded border border-red-900 bg-red-900/30 px-3 py-1.5 text-xs text-red-400 transition hover:bg-red-800/70">
+                ✕ {t('code_clear_all')}
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+            <h3 className="text-sm font-bold text-zinc-200">{t('notif_title')}</h3>
+            <textarea value={notifMessage} onChange={e => setNotifMessage(e.target.value)} rows={3} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-rmared-500 focus:ring-1 focus:ring-rmared-500" placeholder={t('notif_message_pl')} />
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-zinc-400">
+                <input type="radio" name="notifTarget" checked={notifTargetType === 'all'} onChange={() => setNotifTargetType('all')} className="accent-rmared-500" />
+                {t('notif_target_all')}
+              </label>
+              <label className="flex items-center gap-2 text-sm text-zinc-400">
+                <input type="radio" name="notifTarget" checked={notifTargetType === 'specific'} onChange={() => setNotifTargetType('specific')} className="accent-rmared-500" />
+                {t('notif_target_specific')}
+              </label>
+            </div>
+            {notifTargetType === 'specific' && (
+              <input type="email" value={notifTargetEmail} onChange={e => setNotifTargetEmail(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-rmared-500 focus:ring-1 focus:ring-rmared-500" placeholder={t('notif_email_pl')} />
+            )}
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-zinc-400">
+                <input type="checkbox" checked={notifUseSchedule} onChange={e => setNotifUseSchedule(e.target.checked)} className="accent-rmared-500" />
+                {t('notif_schedule_label')}
+              </label>
+              {notifUseSchedule && (
+                <input type="datetime-local" value={notifScheduledAt} onChange={e => setNotifScheduledAt(e.target.value)} className="rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 outline-none focus:border-rmared-500" />
+              )}
+            </div>
+            {notifMessage && (
+              <div className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3">
+                <p className="mb-1 text-xs text-zinc-500">{t('notif_preview')}:</p>
+                <p className="text-sm text-zinc-200">{notifMessage}</p>
+                {notifUseSchedule && notifScheduledAt && (
+                  <p className="mt-1 text-xs text-yellow-500">{t('notif_scheduled_time')}: {new Date(notifScheduledAt).toLocaleString()}</p>
+                )}
+              </div>
+            )}
+            <button onClick={async () => {
+              if (!notifMessage.trim()) return
+              await sendNotification({
+                message: notifMessage.trim(),
+                targetType: notifTargetType,
+                targetEmail: notifTargetEmail,
+                scheduledAt: notifUseSchedule && notifScheduledAt ? new Date(notifScheduledAt).toISOString() : null
+              })
+              setNotifSent(true)
+              setNotifMessage('')
+              setNotifTargetEmail('')
+              setNotifScheduledAt('')
+              setNotifUseSchedule(false)
+              setTimeout(() => setNotifSent(false), 3000)
+              getNotifications().then(setNotifHistory).catch(() => {})
+            }} className="cursor-pointer rounded-lg bg-rmared-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rmared-500 disabled:opacity-50" disabled={!notifMessage.trim()}>
+              {notifSent ? t('notif_sent') : t('notif_send')}
+            </button>
+          </div>
+
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-zinc-400">{t('notif_history')} ({notifHistory.length})</h3>
+            </div>
+            {notifHistory.length === 0 ? (
+              <p className="py-4 text-center text-sm text-zinc-500">{t('notif_no_notifs')}</p>
+            ) : (
+              <div className="max-h-80 space-y-2 overflow-y-auto">
+                {notifHistory.map((n, notifIdx) => (
+                  <div key={n.id || notifIdx} className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="flex-1 text-sm text-zinc-200">{n.message}</p>
+                      <button onClick={async () => {
+                        await deleteNotificationByMessage(n.message)
+                        setNotifHistory(prev => prev.filter(x => x.id !== n.id))
+                      }} className="shrink-0 cursor-pointer rounded bg-red-900/50 px-1.5 py-0.5 text-xs text-red-400 transition hover:bg-red-800">✕</button>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-3">
+                      <span className="text-xs text-zinc-500">{n.targetType === 'all' ? t('notif_target_all') : `${t('notif_target_specific')}: ${n.targetEmail}`}</span>
+                      <span className="text-xs text-zinc-600">{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</span>
+                      {n.scheduledAt && (
+                        <span className="text-xs text-yellow-600">
+                          {t('notif_scheduled_time')}: {new Date(n.scheduledAt).toLocaleString()}
+                          {new Date(n.scheduledAt).getTime() > Date.now() && <span className="text-zinc-600"> ({t('notif_pending')})</span>}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

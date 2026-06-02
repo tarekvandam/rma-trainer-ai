@@ -16,6 +16,7 @@ const levels = [
 ]
 
 const equipmentItems = [
+  { value: 'full_gym', label: 'equip_full_gym' },
   { value: 'dumbbell', label: 'equip_dumbbell' },
   { value: 'barbell', label: 'equip_barbell' },
   { value: 'pullup_bar', label: 'equip_pullup_bar' },
@@ -24,7 +25,13 @@ const equipmentItems = [
   { value: 'kettlebell', label: 'equip_kettlebell' },
   { value: 'resistance_bands', label: 'equip_resistance_bands' },
   { value: 'cable', label: 'equip_cable' },
+  { value: 'gym_machine', label: 'equip_gym_machine' },
+  { value: 'leg_press', label: 'equip_leg_press' },
+  { value: 'lat_pulldown', label: 'equip_lat_pulldown' },
+  { value: 'smith_machine', label: 'equip_smith_machine' },
 ]
+
+const GYM_EQUIP = ['dumbbell', 'barbell', 'pullup_bar', 'bench', 'cable', 'gym_machine', 'leg_press', 'lat_pulldown', 'smith_machine']
 
 const trainingTypes = [
   { value: 'mma', label: 'type_mma' },
@@ -35,6 +42,7 @@ const trainingTypes = [
   { value: 'taekwondo', label: 'type_taekwondo' },
   { value: 'karate', label: 'type_karate' },
   { value: 'wrestling', label: 'type_wrestling' },
+  { value: 'gym', label: 'type_gym' },
   { value: 'general', label: 'type_general' },
 ]
 
@@ -54,10 +62,32 @@ export default function WorkoutForm({ onSubmit, loading }) {
   const [error, setError] = useState('')
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const val = e.target.value
+    if (e.target.name === 'trainingType' && val === 'gym') {
+      setForm({ ...form, trainingType: val, equipment: GYM_EQUIP })
+    } else if (e.target.name === 'trainingType' && form.trainingType === 'gym' && val !== 'gym') {
+      setForm({ ...form, trainingType: val, equipment: [] })
+    } else {
+      setForm({ ...form, [e.target.name]: val })
+    }
   }
 
   const toggleEquipment = (value) => {
+    if (value === 'full_gym') {
+      const hasAll = GYM_EQUIP.every(eq => form.equipment.includes(eq))
+      if (hasAll) {
+        setForm({ ...form, equipment: form.equipment.filter(eq => !GYM_EQUIP.includes(eq)) })
+      } else {
+        const existing = new Set(form.equipment)
+        GYM_EQUIP.forEach(eq => existing.add(eq))
+        setForm({ ...form, equipment: [...existing] })
+      }
+      return
+    }
+    if (value === 'gym_all') {
+      setForm({ ...form, equipment: form.equipment.length === GYM_EQUIP.length ? [] : GYM_EQUIP })
+      return
+    }
     const current = form.equipment
     const idx = current.indexOf(value)
     if (idx >= 0) {
@@ -135,8 +165,21 @@ export default function WorkoutForm({ onSubmit, loading }) {
         <div className="md:col-span-2">
           <label className={labelClass}>{t('wf_equip')}</label>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => { const all = form.equipment.length === GYM_EQUIP.length ? [] : GYM_EQUIP; setForm({ ...form, equipment: all }) }}
+              className={`cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                form.equipment.length === GYM_EQUIP.length
+                  ? 'border-green-500 bg-green-600/20 text-green-400'
+                  : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500'
+              }`}
+            >
+              {form.equipment.length === GYM_EQUIP.length ? '✓ ' : ''}{t('equip_gym_all')}
+            </button>
             {equipmentItems.map((item) => {
-              const checked = form.equipment.includes(item.value)
+              const checked = item.value === 'full_gym'
+                ? GYM_EQUIP.every(eq => form.equipment.includes(eq))
+                : form.equipment.includes(item.value)
               return (
                 <button
                   key={item.value}

@@ -20,6 +20,9 @@ export default function Result() {
 
   return (
     <div className="animate-fade-in space-y-6" id="workout-result">
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="cursor-pointer rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-zinc-200">{t('res_back')}</button>
+      </div>
       <div className="text-center">
         <h1 className="text-2xl font-bold md:text-3xl">{t('res_title')} 🥋</h1>
         <p className="mt-1 text-zinc-400">{form?.name ? `${t('res_for')} ${form.name}` : ''}</p>

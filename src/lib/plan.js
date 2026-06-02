@@ -4,7 +4,7 @@ const CODES_KEY = 'rma_loaded_codes'
 const REQUESTS_KEY = 'rma_requests'
 const DELETED_KEY = 'rma_deleted_requests'
 
-async function supabaseGet(key) {
+export async function supabaseGet(key) {
   try {
     const { supabase } = await import('./supabase')
     if (!supabase) return null
@@ -64,21 +64,34 @@ export function isPro() {
 
 export async function activatePro(code) {
   // Re-check Supabase to ensure code still available (fresh read)
-  try {
-    const cloud = await supabaseGet('serial_codes')
-    if (Array.isArray(cloud)) {
-      const inCloud = cloud.find(c => c.code === code)
-      if (!inCloud) { /* not in cloud, allow */ }
-      else if (inCloud.used) return false
-    }
-  } catch { /* proceed */ }
+  if (code !== 'approved') {
+    try {
+      const cloud = await supabaseGet('serial_codes')
+      if (Array.isArray(cloud)) {
+        const inCloud = cloud.find(c => c.code === code)
+        if (!inCloud) { /* not in cloud, allow */ }
+        else if (inCloud.used) return false
+      }
+    } catch { /* proceed */ }
+  }
 
-  const now = new Date()
-  const expiresAt = new Date(now.setMonth(now.getMonth() + 1)).toISOString()
   const email = getCurrentEmail()
+  let expiresAt
+  if (email) {
+    const requests = getRequestsLocal()
+    const existing = requests.find(r => r.email === email)
+    if (existing && existing.expiresAt) {
+      expiresAt = existing.expiresAt
+    }
+  }
+  if (!expiresAt) {
+    const now = new Date()
+    expiresAt = new Date(now.setMonth(now.getMonth() + 1)).toISOString()
+  }
   const plan = { type: 'pro', code, email, activatedAt: new Date().toISOString(), expiresAt }
   localStorage.setItem(PLAN_KEY, JSON.stringify(plan))
-  markCodeUsed(code)
+
+  if (code !== 'approved') markCodeUsed(code)
 
   if (email) {
     const requests = getRequestsLocal()
@@ -89,7 +102,7 @@ export async function activatePro(code) {
     }
   }
 
-  await markCodeUsedCloud(code)
+  if (code !== 'approved') await markCodeUsedCloud(code)
   return true
 }
 
@@ -547,4 +560,166 @@ export function checkAllExpired() {
   }
   if (changed) localStorage.setItem('rma_users', JSON.stringify(users))
   return plan
+}
+
+const ADS_CACHE_KEY = 'rma_ads_cache'
+
+export function loadAds() {
+  try { return JSON.parse(localStorage.getItem(ADS_CACHE_KEY)) || [] } catch { return [] }
+}
+
+export async function syncAdsCloud() {
+  try {
+    const data = await supabaseGet('site_ads')
+    if (Array.isArray(data)) {
+      localStorage.setItem(ADS_CACHE_KEY, JSON.stringify(data))
+      return data
+    }
+  } catch {}
+  return loadAds()
+}
+
+export async function publishAdsToCloud(ads) {
+  if (!Array.isArray(ads)) return
+  await supabaseSet('site_ads', ads)
+  localStorage.setItem(ADS_CACHE_KEY, JSON.stringify(ads))
+}
+
+export async function pushRegisteredUser(email) {
+  const users = JSON.parse(localStorage.getItem('rma_users') || '{}')
+  const user = users[email]
+  if (!user) return
+  try {
+    const cloud = await supabaseGet('registered_users')
+    const list = Array.isArray(cloud) ? cloud : []
+    if (!list.find(u => u.email === email)) {
+      list.push({ email, createdAt: user.createdAt || new Date().toISOString() })
+      await supabaseSet('registered_users', list)
+    }
+  } catch {}
+}
+
+export async function getRegisteredUsers() {
+  try {
+    const data = await supabaseGet('registered_users')
+    const proData = await supabaseGet('pro_requests')
+    const local = JSON.parse(localStorage.getItem('rma_users') || '{}')
+    const localList = Object.values(local).map(u => ({ email: u.email, createdAt: u.createdAt || '' }))
+    const cloudArr = Array.isArray(data) ? data : []
+    const proArr = Array.isArray(proData) ? proData : []
+    const proMap = {}
+    proArr.forEach(r => { proMap[r.email] = { status: r.status, expiresAt: r.expiresAt || '', approvedAt: r.approvedAt || '' } })
+    const merged = []
+    const emails = new Set()
+    for (const u of [...cloudArr, ...proArr, ...localList]) {
+      if (u.email && !emails.has(u.email)) {
+        emails.add(u.email)
+        const sub = proMap[u.email] || {}
+        merged.push({ email: u.email, createdAt: u.createdAt || sub.createdAt || '', status: sub.status || '', expiresAt: sub.expiresAt || '' })
+      }
+    }
+    return merged.length > 0 ? merged : localList
+  } catch { return [] }
+}
+
+async function getSeqId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }
+
+async function getDeletedMessages() {
+  try { const d = await supabaseGet('site_notifications_deleted'); return Array.isArray(d) ? d : [] }
+  catch { return [] }
+}
+
+async function addDeletedMessage(msg) {
+  try {
+    const list = await getDeletedMessages()
+    if (!list.includes(msg)) list.push(msg)
+    await supabaseSet('site_notifications_deleted', list)
+    localStorage.setItem('rma_notifications_deleted', JSON.stringify(list))
+  } catch {}
+}
+
+async function clearDeletedMessages() {
+  await supabaseSet('site_notifications_deleted', [])
+  localStorage.removeItem('rma_notifications_deleted')
+}
+
+export async function getNotifications() {
+  try {
+    const [d, deletedArr] = await Promise.all([
+      supabaseGet('site_notifications'),
+      supabaseGet('site_notifications_deleted')
+    ])
+    const list = Array.isArray(d) ? d : []
+    const deleted = Array.isArray(deletedArr) ? deletedArr : []
+    let changed = false
+    const migrated = list.map((n, i) => {
+      if (!n.id || typeof n.id !== 'string' || n.id === '{}') {
+        changed = true
+        const hash = (n.message || 'x').split('').reduce((a, c) => a + c.charCodeAt(0), 0).toString(36)
+        return { ...n, id: 'n_' + hash + '_' + i }
+      }
+      return n
+    })
+    const filtered = migrated.filter(n => !deleted.includes(n.message))
+    if (changed) await supabaseSet('site_notifications', filtered)
+    return filtered
+  } catch { return [] }
+}
+
+export async function sendNotification({ message, targetType, targetEmail, scheduledAt }) {
+  const notif = { id: getSeqId(), message, targetType, targetEmail: targetType === 'specific' ? targetEmail : '', createdAt: new Date().toISOString(), scheduledAt: scheduledAt || null, readBy: [] }
+  const existing = await getNotifications()
+  existing.unshift(notif)
+  await supabaseSet('site_notifications', existing)
+  localStorage.setItem('rma_notifications', JSON.stringify(existing.slice(0, 20)))
+}
+
+export async function deleteNotificationByMessage(message) {
+  const deleted = JSON.parse(localStorage.getItem('rma_notifications_deleted') || '[]')
+  if (!deleted.includes(message)) deleted.push(message)
+  localStorage.setItem('rma_notifications_deleted', JSON.stringify(deleted))
+  await addDeletedMessage(message)
+  try {
+    const existing = JSON.parse(localStorage.getItem('rma_notifications') || '[]')
+    localStorage.setItem('rma_notifications', JSON.stringify(existing.filter(n => n.message !== message)))
+  } catch {}
+}
+
+export async function clearAllNotifications() {
+  await clearDeletedMessages()
+  await supabaseSet('site_notifications', [])
+  localStorage.setItem('rma_notifications', '[]')
+}
+
+export function getPendingNotifications(userEmail, shownIds) {
+  const raw = localStorage.getItem('rma_notifications')
+  if (!raw) return []
+  try {
+    const list = JSON.parse(raw)
+    const now = Date.now()
+    return list.filter(n => {
+      if (shownIds.has(n.id)) return false
+      if (n.targetType === 'specific' && n.targetEmail !== userEmail) return false
+      if (n.scheduledAt && new Date(n.scheduledAt).getTime() > now) return false
+      return true
+    })
+  } catch { return [] }
+}
+
+export async function setUserExpiry(email, expiresAt) {
+  const proData = await supabaseGet('pro_requests')
+  const arr = Array.isArray(proData) ? proData : []
+  const found = arr.find(r => r.email === email)
+  if (found) {
+    found.expiresAt = expiresAt
+    if (!found.status) found.status = 'approved'
+  } else {
+    arr.push({ email, status: 'approved', expiresAt, createdAt: new Date().toISOString(), approvedAt: new Date().toISOString() })
+  }
+  await supabaseSet('pro_requests', arr)
+  const local = getRequestsLocal()
+  const localFound = local.find(r => r.email === email)
+  if (localFound) localFound.expiresAt = expiresAt
+  else local.push({ email, status: 'approved', expiresAt, createdAt: new Date().toISOString() })
+  localStorage.setItem(REQUESTS_KEY, JSON.stringify(local))
 }

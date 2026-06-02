@@ -25,3 +25,5 @@ INSERT INTO app_data (key, value) VALUES (
     {"id":"pro","name":"Pro","price":"1000","currency":"جنيه","period":"مرة واحدة","popular":true,"features":["توليد غير محدود","تمارين متقدمة","نظام غذائي مخصص","تصدير PDF","فيديوهات تمارين يوتيوب","دعم أولوية"],"btnText":"اشترك الآن","btnLink":"/payment"}
   ]'::jsonb
 ) ON CONFLICT (key) DO NOTHING;
+INSERT INTO app_data (key, value) VALUES ('visitor_count', '0'::jsonb) ON CONFLICT (key) DO NOTHING;
+INSERT INTO app_data (key, value) VALUES ('site_ads', '[]'::jsonb) ON CONFLICT (key) DO NOTHING;
