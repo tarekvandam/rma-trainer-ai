@@ -14,13 +14,17 @@ export const DAY_TEMPLATES = {
 
 export function resolveDayTemplate(focusText, lang) {
   const ft = focusText.toLowerCase()
-  const pushKw = lang === 'en' ? ['push', 'chest', 'shoulder', 'triceps', 'upper'] : ['دفع', 'صدر', 'كتف', 'تراي', 'أعلى']
+  const pushKw = lang === 'en' ? ['push', 'chest', 'shoulder', 'triceps'] : ['دفع', 'صدر', 'كتف', 'تراي']
   const pullKw = lang === 'en' ? ['pull', 'back', 'biceps', 'rows'] : ['سحب', 'ظهر', 'باي']
   const legsKw = lang === 'en' ? ['legs', 'squat', 'deadlift', 'lower'] : ['أرجل', 'سكوات', 'أسفل']
+  const upperKw = lang === 'en' ? ['upper'] : ['أعلى']
+  const lowerKw = lang === 'en' ? ['lower'] : ['أسفل']
 
   const isPush = pushKw.some(k => ft.includes(k))
   const isPull = pullKw.some(k => ft.includes(k))
   const isLegs = legsKw.some(k => ft.includes(k))
+  const isUpper = upperKw.some(k => ft.includes(k))
+  const isLower = lowerKw.some(k => ft.includes(k))
 
   // Combined days get structured hybrid templates
   if (isPush && isPull && isLegs) {
@@ -45,8 +49,8 @@ export function resolveDayTemplate(focusText, lang) {
   }
 
   // Upper/Lower days (for 5-day PPL + Upper/Lower split)
-  if (ft.includes('upper') && !isPush && !isPull) return DAY_TEMPLATES.upper
-  if (ft.includes('lower') && !isLegs) return DAY_TEMPLATES.lower
+  if (isUpper) return DAY_TEMPLATES.upper
+  if (isLower) return DAY_TEMPLATES.lower
 
   if (isPush) return DAY_TEMPLATES.push
   if (isPull) return DAY_TEMPLATES.pull

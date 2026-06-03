@@ -10,6 +10,7 @@ export function calculateWorkoutScore(plan) {
   const equip = checkEquipmentQC(plan)
   const realSquat = checkRealSquat(days)
   const pushDiversity = checkPushDayDiversity(days)
+  const upperDayCheck = checkUpperDayMovements(days)
 
   const splitScore = split.passed ? 20 : 0
   const missingPatterns = 6 - countTrue(movement)
@@ -33,6 +34,11 @@ export function calculateWorkoutScore(plan) {
     total -= 5
   }
 
+  // Upper Day movement penalty: -10 per missing pattern
+  if (upperDayCheck.violations.length > 0) {
+    total -= upperDayCheck.violations.length * 10
+  }
+
   const splitType = detectSplitType(days)
 
   const details = {
@@ -45,6 +51,7 @@ export function calculateWorkoutScore(plan) {
     equipment: { score: equipmentScore, ...equip },
     realSquat: { found: realSquat.found, exercises: realSquat.exercises, penalty: needsRealSquat && !realSquat.found ? -15 : 0 },
     pushDiversity: { passed: pushDiversity.passed, violations: pushDiversity.violations, penalty: pushDiversity.passed ? 0 : -5 },
+    upperDayCheck: { passed: upperDayCheck.passed, violations: upperDayCheck.violations, penalty: upperDayCheck.violations.length * -10 },
     splitType,
     verdict: total >= 90 ? 'PASS' : total >= 80 ? 'REGENERATE' : 'FAIL',
   }
@@ -57,6 +64,8 @@ export function calculateWorkoutScore(plan) {
   console.log(`Equipment Validation:    ${equip.passed ? '✔' : '✗'} ${equipmentScore}/20`)
   console.log(`Real Squat Found:        ${realSquat.found ? '✔ YES' : '✗ NO'} ${needsRealSquat && !realSquat.found ? '(-15 penalty)' : ''}`)
   console.log(`Push Day Diversity:      ${pushDiversity.passed ? '✔' : '✗ VIOLATION'} ${!pushDiversity.passed ? '(-5 penalty)' : ''}`)
+  const upperMissing = upperDayCheck.violations.map(v => v.missing).join(', ')
+  console.log(`Upper Day Patterns:      ${upperDayCheck.passed ? '✔' : '✗ MISSING'} ${!upperDayCheck.passed ? `(-${upperDayCheck.violations.length * 10} penalty: ${upperMissing})` : ''}`)
   console.log(`Split Type:              ${splitType}`)
   console.log(`-----------------------------------------------------`)
   console.log(`Workout Score: ${Math.max(0, Math.round(total))}/100`)
@@ -278,7 +287,44 @@ function checkPushDayDiversity(days) {
   return { passed: violations.length === 0, violations }
 }
 
-// ---------- 8. Split Type Detection ----------
+// ---------- 8. Upper Day Movement Pattern Check ----------
+const UPPER_REQUIRED = [
+  { pattern: 'Horizontal Push', alt: 'CHEST_COMPOUND' },
+  { pattern: 'Horizontal Pull', alt: 'HORIZONTAL_PULL' },
+  { pattern: 'Vertical Push', alt: 'SHOULDER_COMPOUND' },
+  { pattern: 'Vertical Pull', alt: 'VERTICAL_PULL' },
+  { pattern: 'Lateral Raise', alt: 'LATERAL_RAISE' },
+  { pattern: 'Bicep Curl', alt: 'BICEPS' },
+  { pattern: 'Triceps Extension', alt: 'TRICEPS' },
+]
+
+function checkUpperDayMovements(days) {
+  const violations = []
+
+  days.forEach(d => {
+    const type = detectDayType(d.focus || d.day)
+    if (type !== 'upper') return
+
+    const dayMoves = d.exercises
+      .filter(e => !e.name.includes('Cardio') && !e.name.includes('كارديو'))
+      .map(e => e.movementPattern || e.mov || '')
+
+    UPPER_REQUIRED.forEach(req => {
+      const found = dayMoves.some(m =>
+        m === req.pattern || m === req.alt ||
+        (req.pattern === 'Horizontal Push' && /push/i.test(m) && !/vertical/i.test(m)) ||
+        (req.pattern === 'Horizontal Pull' && /pull/i.test(m) && !/vertical/i.test(m)) ||
+        (req.pattern === 'Vertical Push' && /vertical.*push|shoulder.*compound/i.test(m)) ||
+        (req.pattern === 'Vertical Pull' && /vertical.*pull/i.test(m))
+      )
+      if (!found) {
+        violations.push({ day: d.day || d.focus, missing: req.pattern })
+      }
+    })
+  })
+
+  return { passed: violations.length === 0, violations }
+}
 function detectSplitType(days) {
   const types = days.map(d => detectDayType(d.focus || d.day))
   const unique = [...new Set(types)]
