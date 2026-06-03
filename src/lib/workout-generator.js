@@ -205,7 +205,14 @@ export function generateGymPlan(form) {
 
   // Day focuses
   const typeFocus = lang === 'en' ? typeFocusEN : typeFocusAR
-  const focus = typeFocus[trainingType] || typeFocus.general
+  let focus = typeFocus[trainingType] || typeFocus.general
+
+  // 5-Day gym intermediate+: PPL + Upper/Lower
+  if (trainingType === 'gym' && days === 5 && (level === 'intermediate' || level === 'advanced')) {
+    focus = lang === 'en'
+      ? { d1: 'Push (Chest + Shoulders + Triceps)', d2: 'Pull (Back + Biceps)', d3: 'Legs (Squats + Deadlifts)', d4: 'Upper Body', d5: 'Lower Body + Core' }
+      : { d1: 'دفع (صدر + كتف + ترايسبس)', d2: 'سحب (ظهر + بايسبس)', d3: 'أرجل (سكوات + ديدليفت)', d4: 'أعلى جسم', d5: 'أسفل جسم + قلب' }
+  }
 
   // Cardio
   const generalCardioAR = goal === 'fat_loss' ? [
@@ -301,8 +308,10 @@ export function generateGymPlan(form) {
 
     // Regenerate day titles from actual exercises
     dayData.forEach((dd, i) => {
-      const title = generateDayTitle(dd, lang)
-      dd.day = lang === 'en' ? `Day ${dayNames[i + 1]} — ${title}` : `اليوم ${dayNames[i + 1]} — ${title}`
+      const forcedTitle = focus['d' + (i + 1)] || null
+      const title = generateDayTitle(dd, lang, forcedTitle)
+      const prefix = lang === 'en' ? `Day ${dayNames[i + 1]} — ` : `اليوم ${dayNames[i + 1]} — `
+      dd.day = prefix + title
       dd.focus = title
     })
 

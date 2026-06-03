@@ -1,11 +1,15 @@
 export function calculateWorkoutScore(plan) {
   const days = plan.days || []
+  const equipList = plan.equipmentList || plan._equipmentList || []
+  const level = plan.level || ''
 
   const split = checkSplitValidation(days)
   const movement = checkMovementPatterns(days)
   const dup = checkDuplicateQC(days)
   const muscle = checkMuscleCoverage(days)
   const equip = checkEquipmentQC(plan)
+  const realSquat = checkRealSquat(days)
+  const pushDiversity = checkPushDayDiversity(days)
 
   const splitScore = split.passed ? 20 : 0
   const missingPatterns = 6 - countTrue(movement)
@@ -15,16 +19,33 @@ export function calculateWorkoutScore(plan) {
   const muscleScore = Math.round(Math.max(0, 20 - missingMuscles * (20 / 12)))
   const equipmentScore = equip.passed ? 20 : 0
 
-  const total = splitScore + movementScore + duplicateScore + muscleScore + equipmentScore
+  let total = splitScore + movementScore + duplicateScore + muscleScore + equipmentScore
+
+  // Real Squat penalty: -15 if gym intermediate+ and no real squat
+  const isGymUser = equipList.length === 0 || equipList.some(e => GYM_EQUIPMENT.includes(e))
+  const needsRealSquat = isGymUser && (level === 'intermediate' || level === 'advanced')
+  if (needsRealSquat && !realSquat.found) {
+    total -= 15
+  }
+
+  // Push day diversity penalty: -5 if违规
+  if (!pushDiversity.passed) {
+    total -= 5
+  }
+
+  const splitType = detectSplitType(days)
 
   const details = {
-    total: Math.round(total),
+    total: Math.max(0, Math.round(total)),
     rawScore: total,
     split: { score: splitScore, ...split },
     movement: { score: movementScore, found: movement },
     duplicate: { score: duplicateScore, ...dup },
     muscle: { score: muscleScore, present: muscle.present, missing: muscle.missing },
     equipment: { score: equipmentScore, ...equip },
+    realSquat: { found: realSquat.found, exercises: realSquat.exercises, penalty: needsRealSquat && !realSquat.found ? -15 : 0 },
+    pushDiversity: { passed: pushDiversity.passed, violations: pushDiversity.violations, penalty: pushDiversity.passed ? 0 : -5 },
+    splitType,
     verdict: total >= 90 ? 'PASS' : total >= 80 ? 'REGENERATE' : 'FAIL',
   }
 
@@ -34,8 +55,11 @@ export function calculateWorkoutScore(plan) {
   console.log(`Duplicate Validation:    ${dup.passed ? '✔' : '✗'} ${duplicateScore}/20`)
   console.log(`Muscle Coverage:         ${missingMuscles === 0 ? '✔' : '✗'} ${muscleScore}/20  (missing: ${missingMuscles > 0 ? muscle.missing.join(', ') : 'none'})`)
   console.log(`Equipment Validation:    ${equip.passed ? '✔' : '✗'} ${equipmentScore}/20`)
+  console.log(`Real Squat Found:        ${realSquat.found ? '✔ YES' : '✗ NO'} ${needsRealSquat && !realSquat.found ? '(-15 penalty)' : ''}`)
+  console.log(`Push Day Diversity:      ${pushDiversity.passed ? '✔' : '✗ VIOLATION'} ${!pushDiversity.passed ? '(-5 penalty)' : ''}`)
+  console.log(`Split Type:              ${splitType}`)
   console.log(`-----------------------------------------------------`)
-  console.log(`Workout Score: ${Math.round(total)}/100`)
+  console.log(`Workout Score: ${Math.max(0, Math.round(total))}/100`)
   console.log(`Verdict: ${details.verdict}${details.verdict === 'REGENERATE' ? ' (score < 90, regenerating...)' : ''}${details.verdict === 'FAIL' ? ' (score < 80, plan discarded)' : ''}`)
   console.log('=====================================================')
 
@@ -66,14 +90,20 @@ function checkSplitValidation(days) {
 
 function detectDayType(focus) {
   const f = (focus || '').toLowerCase()
-  const pushKw = ['push', 'chest', 'shoulder', 'triceps', 'upper', 'دفع', 'صدر', 'كتف', 'تراي', 'أعلى']
+  const pushKw = ['push', 'chest', 'shoulder', 'triceps', 'دفع', 'صدر', 'كتف', 'تراي']
   const pullKw = ['pull', 'back', 'biceps', 'row', 'سحب', 'ظهر', 'باي']
-  const legsKw = ['legs', 'squat', 'deadlift', 'lower', 'أرجل', 'سكوات', 'ديد', 'أسفل']
+  const legsKw = ['legs', 'squat', 'deadlift', 'أرجل', 'سكوات', 'ديد']
+  const upperKw = ['upper', 'أعلى']
+  const lowerKw = ['lower', 'أسفل']
 
+  const isUpper = upperKw.some(k => f.includes(k))
+  const isLower = lowerKw.some(k => f.includes(k))
   const isPush = pushKw.some(k => f.includes(k))
   const isPull = pullKw.some(k => f.includes(k))
   const isLegs = legsKw.some(k => f.includes(k))
 
+  if (isUpper) return 'upper'
+  if (isLower) return 'lower'
   if (isPush && !isPull && !isLegs) return 'push'
   if (isPull && !isPush && !isLegs) return 'pull'
   if (isLegs && !isPush && !isPull) return 'legs'
@@ -91,11 +121,15 @@ const fullMoves = [...pushMoves, ...pullMoves, ...legMoves]
 
 function exercisesMatchType(exMoves, type) {
   if (!exMoves.length) return false
+  const upperMoves = [...pushMoves, ...pullMoves]
+  const lowerMoves = [...legMoves]
   const allowed = type === 'push' ? pushMoves :
     type === 'pull' ? pullMoves :
     type === 'legs' ? legMoves :
+    type === 'upper' ? upperMoves :
+    type === 'lower' ? lowerMoves :
     type === 'full' ? fullMoves :
-    type === 'push+pull' ? [...pushMoves, ...pullMoves] :
+    type === 'push+pull' ? upperMoves :
     type === 'push+legs' ? [...pushMoves, ...legMoves] :
     type === 'pull+legs' ? [...pullMoves, ...legMoves] : fullMoves
 
@@ -193,4 +227,73 @@ function checkEquipmentQC(plan) {
   })
 
   return { passed: homeExercises.length === 0, homeExercises }
+}
+
+// ---------- 6. Real Squat Check ----------
+const REAL_SQUAT_PATTERNS = /back squat|front squat|hack squat|smith.*squat|squats|سكوات.*بار|سكوات أمامي|سكوات.*سميث|سكوات/
+
+function checkRealSquat(days) {
+  const found = []
+  days.forEach(d => {
+    d.exercises.forEach(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+      const n = e.name.toLowerCase()
+      if (REAL_SQUAT_PATTERNS.test(n) && e.mov !== 'QUAD_ISOLATION') {
+        found.push(e.name)
+      }
+    })
+  })
+  return { found: found.length > 0, exercises: found }
+}
+
+// ---------- 7. Push Day Exercise Diversity ----------
+function checkPushDayDiversity(days) {
+  const violations = []
+
+  days.forEach(d => {
+    const type = detectDayType(d.focus || d.day)
+    if (type !== 'push' && type !== 'upper') return
+
+    const pushExs = d.exercises.filter(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return false
+      const cat = e.cat || ''
+      return cat === 'push'
+    })
+
+    // Check for barbell bench + flat DB bench in same day (excluding machine/incline/decline)
+    const hasBarbellBench = pushExs.some(e => {
+      const n = e.name.toLowerCase()
+      return /\bbench press\b/.test(n) && !/dumbbell|db/i.test(n) && !/incline|decline/i.test(n) && !/machine|smith/i.test(n)
+    })
+    const hasFlatDBBench = pushExs.some(e => {
+      const n = e.name.toLowerCase()
+      return /dumbbell.*bench.*press/i.test(n) && !/incline|decline/i.test(n)
+    })
+
+    if (hasBarbellBench && hasFlatDBBench) {
+      violations.push({ day: d.day || d.focus, issue: 'Barbell Bench Press + Dumbbell Bench Press in same day' })
+    }
+  })
+
+  return { passed: violations.length === 0, violations }
+}
+
+// ---------- 8. Split Type Detection ----------
+function detectSplitType(days) {
+  const types = days.map(d => detectDayType(d.focus || d.day))
+  const unique = [...new Set(types)]
+
+  // Check for Upper/Lower keywords in focus
+  const hasUpper = days.some(d => (d.focus || '').toLowerCase().includes('upper'))
+  const hasLower = days.some(d => (d.focus || '').toLowerCase().includes('lower'))
+
+  if (unique.includes('push') && unique.includes('pull') && unique.includes('legs')) {
+    if (hasUpper || hasLower) return 'PPL + Upper/Lower'
+    return 'PPL'
+  }
+  if (hasUpper && hasLower) return 'Upper/Lower'
+  if (unique.includes('push') && unique.includes('pull') && !unique.includes('legs')) return 'Upper/Lower'
+  if (unique.length <= 2 && unique.every(t => t === 'push' || t === 'pull')) return 'Upper/Lower'
+  if (days.length === 3 && unique.every(t => t === 'full' || t === 'push+pull+legs')) return 'Full Body'
+  return 'Custom'
 }

@@ -1,11 +1,15 @@
 export const PUSH_DAY = ['CHEST_COMPOUND', 'CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'CHEST_ISOLATION', 'LATERAL_RAISE', 'TRICEPS']
 export const PULL_DAY = ['VERTICAL_PULL', 'HORIZONTAL_PULL', 'BACK_ACCESSORY', 'REAR_DELT', 'BICEPS', 'BICEPS']
 export const LEG_DAY = ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS']
+export const UPPER_DAY = ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'HORIZONTAL_PULL', 'VERTICAL_PULL', 'LATERAL_RAISE', 'BICEPS', 'TRICEPS']
+export const LOWER_DAY = ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS']
 
 export const DAY_TEMPLATES = {
   push: { structure: PUSH_DAY },
   pull: { structure: PULL_DAY },
   legs: { structure: LEG_DAY },
+  upper: { structure: UPPER_DAY },
+  lower: { structure: LOWER_DAY },
 }
 
 export function resolveDayTemplate(focusText, lang) {
@@ -39,6 +43,10 @@ export function resolveDayTemplate(focusText, lang) {
       structure: ['CHEST_COMPOUND', 'VERTICAL_PULL', 'SHOULDER_COMPOUND', 'HORIZONTAL_PULL', 'CHEST_ISOLATION', 'BICEPS', 'TRICEPS', 'ABS'],
     }
   }
+
+  // Upper/Lower days (for 5-day PPL + Upper/Lower split)
+  if (ft.includes('upper') && !isPush && !isPull) return DAY_TEMPLATES.upper
+  if (ft.includes('lower') && !isLegs) return DAY_TEMPLATES.lower
 
   if (isPush) return DAY_TEMPLATES.push
   if (isPull) return DAY_TEMPLATES.pull

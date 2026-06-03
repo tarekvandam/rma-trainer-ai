@@ -1,7 +1,17 @@
 function detectDayType(focus) {
   const f = (focus || '').toLowerCase()
-  const legKw = ['legs', 'squat', 'deadlift', 'lower', 'أرجل', 'سكوات', 'ديد', 'أسفل']
-  return legKw.some(k => f.includes(k)) ? 'legs' : 'other'
+  const pushKw = ['push', 'chest', 'shoulder', 'triceps', 'upper', 'دفع', 'صدر', 'كتف', 'تراي', 'أعلى']
+  const pullKw = ['pull', 'back', 'biceps', 'rows', 'سحب', 'ظهر', 'باي']
+  const legsKw = ['legs', 'squat', 'deadlift', 'lower', 'أرجل', 'سكوات', 'ديد', 'أسفل']
+
+  const isPush = pushKw.some(k => f.includes(k))
+  const isPull = pullKw.some(k => f.includes(k))
+  const isLegs = legsKw.some(k => f.includes(k))
+
+  if (isLegs) return 'legs'
+  if (isPush) return 'push'
+  if (isPull) return 'pull'
+  return 'other'
 }
 
 export function validateWorkout(planOrDays) {
@@ -47,6 +57,21 @@ export function validateWorkout(planOrDays) {
       const hasHinge = realExs.some(e => e.mov === 'HIP_HINGE')
       if (!hasHinge) {
         errors.push(`Day ${dayNum}: Leg day must include a Hip Hinge exercise`)
+      }
+    }
+
+    // 6. Push Day: no Barbell Bench Press + Dumbbell Bench Press (unless incline)
+    if (type === 'push') {
+      const hasBarbellBench = realExs.some(e => {
+        const n = e.name.toLowerCase()
+        return /\bbench press\b/.test(n) && !/dumbbell|db/i.test(n) && !/incline|decline/i.test(n) && !/machine|smith/i.test(n)
+      })
+      const hasFlatDBBench = realExs.some(e => {
+        const n = e.name.toLowerCase()
+        return /dumbbell.*bench.*press/i.test(n) && !/incline|decline/i.test(n)
+      })
+      if (hasBarbellBench && hasFlatDBBench) {
+        errors.push(`Day ${dayNum}: Push day cannot have both Barbell Bench Press and Dumbbell Bench Press (use Incline variant instead)`)
       }
     }
   })

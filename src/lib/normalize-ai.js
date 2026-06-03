@@ -79,12 +79,12 @@ export function normalizeAIWorkout(plan, lang = 'en') {
   })
 
   // Regenerate day titles from actual exercises
-  dayData.forEach(day => {
+  dayData.forEach((day, i) => {
     const title = generateDayTitle(day, lang)
-    if (day.day) {
-      const prefix = day.day.match(/^(?:Day \d+|اليوم \S+)\s*—\s*/)?.[0] || ''
-      day.day = prefix + title
-    }
+    const prefix = lang === 'en'
+      ? `Day ${i + 1} — `
+      : `اليوم ${['', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'][i + 1] || i + 1} — `
+    day.day = prefix + title
     day.focus = title
   })
 

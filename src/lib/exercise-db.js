@@ -377,7 +377,9 @@ export function tagExercises(pool) {
   })
 }
 
-export function generateDayTitle(day, lang = 'en') {
+export function generateDayTitle(day, lang = 'en', forceTitle) {
+  if (forceTitle) return forceTitle
+
   const exs = (day.exercises || []).filter(e => e.name && !e.name.includes('Cardio') && !e.name.includes('كارديو'))
   if (exs.length === 0) return day.day || day.focus || ''
 
