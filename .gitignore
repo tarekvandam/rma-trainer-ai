@@ -3,4 +3,13 @@ dist
 .env
 .DS_Store
 *.log
+*.apk
+*.apk.zst
 android/app/build/
+android/.gradle/
+android/gradle/wrapper/gradle-wrapper.jar
+android/gradlew
+android/gradlew.bat
+assets/
+icons/
+*.png

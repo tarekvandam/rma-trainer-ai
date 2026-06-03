@@ -20,6 +20,15 @@ const SYSTEM_PROMPT = `أنت مدرب RMA Trainer AI — خبير في الفن
 - 5 أيام: Push / Pull / Legs / Upper / Lower
 - 6 أيام: Push / Pull / Legs / Push / Pull / Legs
 
+لنوع تدريب "جيم": اختر تمارين حقيقية من الجيم (بنش برس، سكوات، ديدليفت، جهاز صدر، كابل، سميث مشين، الخ). وزع التمارين حسب التركيز العضلي لكل يوم:
+- يوم دفع (Push): تمارين صدر + كتف + ترايسبس
+- يوم سحب (Pull): تمارين ظهر + بايسبس
+- يوم أرجل (Legs): تمارين رجلين + بطن (اختياري)
+- يوم أعلى جسم (Upper): صدر + ظهر + كتف + ترايسبس + بايسبس
+- يوم أسفل جسم (Lower): رجلين + بطن
+
+استخدم 5 تمارين في اليوم العادي، 4 تمارين في تدريبات القوة. كل تمرين له 3-5 مجموعات، 6-15 تكرار، راحة 45-90 ثانية.
+
 الأهم: وزع التمارين على الأيام حسب عدد أيام التمرين. كل يوم له تمارينه المحددة.
 
 أعد الرد بصيغة JSON فقط بدون أي نص إضافي بالهيكل التالي بالضبط:
@@ -60,6 +69,15 @@ Recommended gym splits by days:
 - 4 days: Upper / Lower / Push / Pull or Upper / Lower x2
 - 5 days: Push / Pull / Legs / Upper / Lower
 - 6 days: Push / Pull / Legs / Push / Pull / Legs
+
+For "Gym" training type: pick real gym exercises (bench press, squat, deadlift, cable, machine, smith machine, etc) organized by muscle focus per day:
+- Push day: chest + shoulders + triceps
+- Pull day: back + biceps
+- Legs day: quads + hamstrings + glutes + core
+- Upper day: chest + back + shoulders + arms
+- Lower day: legs + core
+
+Use 5 exercises per day (4 for strength). Each exercise: 3-5 sets, 6-15 reps, 45-90 sec rest.
 
 Most important: Distribute exercises across all training days. Each day has its own specific exercises.
 
@@ -227,16 +245,26 @@ function getFallbackPlan(form, lang = 'ar') {
       { name: 'تمدد ظهر (Cobra Stretch)', defSets: 2, defReps: '30 ث', defRest: '15 ث' },
     ],
     dumbbell: [
-      { name: 'دمبل بنش برس (Dumbbell Bench Press)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'دمبل ضغط كتف (Shoulder Press)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'دمبل رف (Dumbbell Rows)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'دمبل بايسبس (Bicep Curls)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'دمبل ترايسبس خلف الرأس (Overhead Ext)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'دمبل قرفصاء (Goblet Squats)', defSets: 4, defReps: '10-15', defRest: '90 ث' },
-      { name: 'دمبل اندفاع (Lunges)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
-      { name: 'دمبل روسيان تويست (Russian Twist)', defSets: 3, defReps: '16-20', defRest: '30 ث' },
-      { name: 'دمبل ثراستر (Thrusters)', defSets: 3, defReps: '10-12', defRest: '60 ث' },
-      { name: 'دمبل رفع سمانة (Calf Raises)', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+      { name: 'دمبل بنش برس (Dumbbell Bench Press)', cat: 'push', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'دمبل ضغط كتف (Shoulder Press)', cat: 'push', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'دمبل رف (Dumbbell Rows)', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'دمبل بايسبس (Bicep Curls)', cat: 'pull', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'دمبل ترايسبس خلفي (Overhead Tricep Ext)', cat: 'push', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'دمبل قرفصاء كوب (Goblet Squats)', cat: 'legs', defSets: 4, defReps: '10-15', defRest: '90 ث' },
+      { name: 'دمبل اندفاع (Dumbbell Lunges)', cat: 'legs', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'دمبل روسيان تويست (Russian Twist)', cat: 'core', defSets: 3, defReps: '16-20', defRest: '30 ث' },
+      { name: 'دمبل ثراستر (Dumbbell Thrusters)', cat: 'push', defSets: 3, defReps: '10-12', defRest: '60 ث' },
+      { name: 'دمبل رفع سمانة (Calf Raises)', cat: 'legs', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+    ],
+    barbell: [
+      { name: 'بار بنش برس (Bench Press)', cat: 'push', defSets: 5, defReps: '8-10', defRest: '90 ث' },
+      { name: 'بار قرفصاء (Back Squats)', cat: 'legs', defSets: 5, defReps: '8-10', defRest: '2 د' },
+      { name: 'بار رف ميت (Deadlifts)', cat: 'legs', defSets: 4, defReps: '6-8', defRest: '2-3 د' },
+      { name: 'بار رف (Barbell Rows)', cat: 'pull', defSets: 4, defReps: '8-10', defRest: '90 ث' },
+      { name: 'بار ضغط كتف (Overhead Press)', cat: 'push', defSets: 4, defReps: '8-10', defRest: '90 ث' },
+      { name: 'بار بايسبس (Barbell Curls)', cat: 'pull', defSets: 3, defReps: '10-12', defRest: '45 ث' },
+      { name: 'بار ترايسبس (Skull Crushers)', cat: 'push', defSets: 3, defReps: '10-12', defRest: '45 ث' },
+      { name: 'بار رفع سمانة واقف (Standing Calf)', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '30 ث' },
     ],
     barbell: [
       { name: 'بار بنش برس (Bench Press)', defSets: 5, defReps: '8-10', defRest: '90 ث' },
@@ -274,11 +302,11 @@ function getFallbackPlan(form, lang = 'ar') {
       { name: 'رفع رجلين معلق (Hanging Leg Raises)', defSets: 3, defReps: '10-15', defRest: '45 ث' },
     ],
     bench: [
-      { name: 'انخفاض كرسي (Bench Dips)', defSets: 3, defReps: '12-18', defRest: '45 ث' },
-      { name: 'بنش برس (Bench Press — لو النش متوفر)', defSets: 4, defReps: '10-12', defRest: '90 ث' },
-      { name: 'قرفصاء بالكرسي (Bulgarian Split Squats)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
-      { name: 'رفع رجلين على كرسي (Leg Raises on Bench)', defSets: 3, defReps: '12-15', defRest: '30 ث' },
-      { name: 'اندفاع خلفي بالكرسي (Reverse Lunges)', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'انخفاض كرسي (Bench Dips)', cat: 'push', defSets: 3, defReps: '12-18', defRest: '45 ث' },
+      { name: 'بنش برس (Bench Press — لو النش متوفر)', cat: 'push', defSets: 4, defReps: '10-12', defRest: '90 ث' },
+      { name: 'قرفصاء بالكرسي (Bulgarian Split Squats)', cat: 'legs', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'رفع رجلين على كرسي (Leg Raises on Bench)', cat: 'core', defSets: 3, defReps: '12-15', defRest: '30 ث' },
+      { name: 'اندفاع خلفي بالكرسي (Reverse Lunges)', cat: 'legs', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
     ],
     step: [
       { name: 'صعود استيب (Step-ups)', defSets: 3, defReps: '12-15 لكل رجل', defRest: '60 ث' },
@@ -288,44 +316,44 @@ function getFallbackPlan(form, lang = 'ar') {
       { name: 'تمارين هوائية على استيب (Step Aerobics)', defSets: 3, defReps: '30 ث', defRest: '15 ث' },
     ],
     cable: [
-      { name: 'كابل ترايسبس (Cable Pushdowns)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'كابل كرانش (Cable Crunches)', defSets: 3, defReps: '15-20', defRest: '30 ث' },
-      { name: 'كابل فلای صدر (Cable Chest Fly)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
-      { name: 'كابل رف (Cable Rows)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'كابل بايسبس (Cable Bicep Curls)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'كابل كتف جانبي (Cable Lateral Raise)', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+      { name: 'كابل ترايسبس (Cable Pushdowns)', cat: 'push', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'كابل كرانش (Cable Crunches)', cat: 'core', defSets: 3, defReps: '15-20', defRest: '30 ث' },
+      { name: 'كابل فلای صدر (Cable Chest Fly)', cat: 'push', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'كابل رف (Cable Rows)', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'كابل بايسبس (Cable Bicep Curls)', cat: 'pull', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'كابل كتف جانبي (Cable Lateral Raise)', cat: 'push', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     ],
     gym_machine: [
-      { name: 'جهاز صدر (Chest Press Machine)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'جهاز سحب علوي (Lat Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'جهاز دفع أرجل (Leg Press Machine)', defSets: 5, defReps: '10-15', defRest: '90 ث' },
-      { name: 'جهاز تمديد رجل (Leg Extension)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
-      { name: 'جهاز ثني رجل (Leg Curl)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
-      { name: 'جهاز كتف (Shoulder Press Machine)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'جهاز ظهر (Seated Row Machine)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'جهاز صدر فراشة (Pec Deck Fly)', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+      { name: 'جهاز صدر (Chest Press Machine)', cat: 'push', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'جهاز سحب علوي (Lat Pulldown)', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'جهاز دفع أرجل (Leg Press Machine)', cat: 'legs', defSets: 5, defReps: '10-15', defRest: '90 ث' },
+      { name: 'جهاز تمديد رجل (Leg Extension)', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'جهاز ثني رجل (Leg Curl)', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'جهاز كتف (Shoulder Press Machine)', cat: 'push', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'جهاز ظهر (Seated Row Machine)', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'جهاز صدر فراشة (Pec Deck Fly)', cat: 'push', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     ],
     leg_press: [
-      { name: 'ليج بريس (Leg Press)', defSets: 5, defReps: '10-15', defRest: '90 ث' },
-      { name: 'سمانة على ليج بريس (Calf Raises on Leg Press)', defSets: 5, defReps: '15-20', defRest: '45 ث' },
-      { name: 'ليج بريس برجل واحدة (Single Leg Press)', defSets: 4, defReps: '10-12 لكل رجل', defRest: '60 ث' },
-      { name: 'ليج بريس مائل (Incline Leg Press)', defSets: 4, defReps: '12-15', defRest: '90 ث' },
-      { name: 'هوريزونتال ليج بريس (Horizontal Leg Press)', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'ليج بريس (Leg Press)', cat: 'legs', defSets: 5, defReps: '10-15', defRest: '90 ث' },
+      { name: 'سمانة على ليج بريس (Calf Raises on Leg Press)', cat: 'legs', defSets: 5, defReps: '15-20', defRest: '45 ث' },
+      { name: 'ليج بريس برجل واحدة (Single Leg Press)', cat: 'legs', defSets: 4, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'ليج بريس مائل (Incline Leg Press)', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '90 ث' },
+      { name: 'هوريزونتال ليج بريس (Horizontal Leg Press)', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '60 ث' },
     ],
     lat_pulldown: [
-      { name: 'لات بول داون أمامي (Front Lat Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'لات بول داون خلفي (Behind Neck Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'قبضة عكسية لات (Reverse Grip Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'قبضة ضيقة لات (V-Grip Pulldown)', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'سحب كابل وجه (Face Pull)', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'لات بول داون أمامي (Front Lat Pulldown)', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'لات بول داون خلفي (Behind Neck Pulldown)', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'قبضة عكسية لات (Reverse Grip Pulldown)', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'قبضة ضيقة لات (V-Grip Pulldown)', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'سحب كابل وجه (Face Pull)', cat: 'pull', defSets: 3, defReps: '12-15', defRest: '45 ث' },
     ],
     smith_machine: [
-      { name: 'سميث مشين سكوات (Smith Machine Squat)', defSets: 5, defReps: '8-10', defRest: '90 ث' },
-      { name: 'سميث مشين بنش (Smith Machine Bench Press)', defSets: 4, defReps: '8-10', defRest: '90 ث' },
-      { name: 'سميث مشين كتف (Smith Machine Shoulder Press)', defSets: 4, defReps: '8-10', defRest: '60 ث' },
-      { name: 'سميث مشين اندفاع (Smith Machine Lunges)', defSets: 4, defReps: '10-12 لكل رجل', defRest: '60 ث' },
-      { name: 'سميث مشين رومانيان (Smith Machine RDL)', defSets: 4, defReps: '10-12', defRest: '90 ث' },
-      { name: 'سميث مشين سمّانة (Smith Machine Calf Raises)', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+      { name: 'سميث مشين سكوات (Smith Machine Squat)', cat: 'legs', defSets: 5, defReps: '8-10', defRest: '90 ث' },
+      { name: 'سميث مشين بنش (Smith Machine Bench Press)', cat: 'push', defSets: 4, defReps: '8-10', defRest: '90 ث' },
+      { name: 'سميث مشين كتف (Smith Machine Shoulder Press)', cat: 'push', defSets: 4, defReps: '8-10', defRest: '60 ث' },
+      { name: 'سميث مشين اندفاع (Smith Machine Lunges)', cat: 'legs', defSets: 4, defReps: '10-12 لكل رجل', defRest: '60 ث' },
+      { name: 'سميث مشين رومانيان (Smith Machine RDL)', cat: 'legs', defSets: 4, defReps: '10-12', defRest: '90 ث' },
+      { name: 'سميث مشين سمّانة (Smith Machine Calf Raises)', cat: 'legs', defSets: 4, defReps: '15-20', defRest: '30 ث' },
     ],
   }
 
@@ -345,26 +373,26 @@ function getFallbackPlan(form, lang = 'ar') {
       { name: 'Cobra Stretch', defSets: 2, defReps: '30 sec', defRest: '15 ث' },
     ],
     dumbbell: [
-      { name: 'Dumbbell Bench Press', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Shoulder Press', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Dumbbell Rows', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Bicep Curls', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'Overhead Tricep Extension', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'Goblet Squats', defSets: 4, defReps: '10-15', defRest: '90 ث' },
-      { name: 'Dumbbell Lunges', defSets: 3, defReps: '10-12 each leg', defRest: '60 ث' },
-      { name: 'Russian Twist', defSets: 3, defReps: '16-20', defRest: '30 ث' },
-      { name: 'Dumbbell Thrusters', defSets: 3, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Calf Raises', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+      { name: 'Dumbbell Bench Press', cat: 'push', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Shoulder Press', cat: 'push', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Dumbbell Rows', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Bicep Curls', cat: 'pull', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'Overhead Tricep Extension', cat: 'push', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'Goblet Squats', cat: 'legs', defSets: 4, defReps: '10-15', defRest: '90 ث' },
+      { name: 'Dumbbell Lunges', cat: 'legs', defSets: 3, defReps: '10-12 each leg', defRest: '60 ث' },
+      { name: 'Russian Twist', cat: 'core', defSets: 3, defReps: '16-20', defRest: '30 ث' },
+      { name: 'Dumbbell Thrusters', cat: 'push', defSets: 3, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Calf Raises', cat: 'legs', defSets: 4, defReps: '15-20', defRest: '30 ث' },
     ],
     barbell: [
-      { name: 'Bench Press', defSets: 5, defReps: '8-10', defRest: '90 ث' },
-      { name: 'Back Squats', defSets: 5, defReps: '8-10', defRest: '2 min' },
-      { name: 'Deadlifts', defSets: 4, defReps: '6-8', defRest: '2-3 min' },
-      { name: 'Barbell Rows', defSets: 4, defReps: '8-10', defRest: '90 ث' },
-      { name: 'Overhead Press', defSets: 4, defReps: '8-10', defRest: '90 ث' },
-      { name: 'Barbell Curls', defSets: 3, defReps: '10-12', defRest: '45 ث' },
-      { name: 'Skull Crushers', defSets: 3, defReps: '10-12', defRest: '45 ث' },
-      { name: 'Standing Calf Raises', defSets: 4, defReps: '12-15', defRest: '30 ث' },
+      { name: 'Bench Press', cat: 'push', defSets: 5, defReps: '8-10', defRest: '90 ث' },
+      { name: 'Back Squats', cat: 'legs', defSets: 5, defReps: '8-10', defRest: '2 min' },
+      { name: 'Deadlifts', cat: 'legs', defSets: 4, defReps: '6-8', defRest: '2-3 min' },
+      { name: 'Barbell Rows', cat: 'pull', defSets: 4, defReps: '8-10', defRest: '90 ث' },
+      { name: 'Overhead Press', cat: 'push', defSets: 4, defReps: '8-10', defRest: '90 ث' },
+      { name: 'Barbell Curls', cat: 'pull', defSets: 3, defReps: '10-12', defRest: '45 ث' },
+      { name: 'Skull Crushers', cat: 'push', defSets: 3, defReps: '10-12', defRest: '45 ث' },
+      { name: 'Standing Calf Raises', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '30 ث' },
     ],
     kettlebell: [
       { name: 'Kettlebell Swings', defSets: 4, defReps: '15-20', defRest: '60 ث' },
@@ -392,11 +420,11 @@ function getFallbackPlan(form, lang = 'ar') {
       { name: 'Hanging Leg Raises', defSets: 3, defReps: '10-15', defRest: '45 ث' },
     ],
     bench: [
-      { name: 'Bench Dips', defSets: 3, defReps: '12-18', defRest: '45 ث' },
-      { name: 'Bench Press', defSets: 4, defReps: '10-12', defRest: '90 ث' },
-      { name: 'Bulgarian Split Squats', defSets: 3, defReps: '10-12 each leg', defRest: '60 ث' },
-      { name: 'Leg Raises on Bench', defSets: 3, defReps: '12-15', defRest: '30 ث' },
-      { name: 'Reverse Lunges', defSets: 3, defReps: '10-12 each leg', defRest: '60 ث' },
+      { name: 'Bench Dips', cat: 'push', defSets: 3, defReps: '12-18', defRest: '45 ث' },
+      { name: 'Bench Press', cat: 'push', defSets: 4, defReps: '10-12', defRest: '90 ث' },
+      { name: 'Bulgarian Split Squats', cat: 'legs', defSets: 3, defReps: '10-12 each leg', defRest: '60 ث' },
+      { name: 'Leg Raises on Bench', cat: 'core', defSets: 3, defReps: '12-15', defRest: '30 ث' },
+      { name: 'Reverse Lunges', cat: 'legs', defSets: 3, defReps: '10-12 each leg', defRest: '60 ث' },
     ],
     step: [
       { name: 'Step-ups', defSets: 3, defReps: '12-15 each leg', defRest: '60 ث' },
@@ -406,44 +434,44 @@ function getFallbackPlan(form, lang = 'ar') {
       { name: 'Step Aerobics', defSets: 3, defReps: '30 sec', defRest: '15 ث' },
     ],
     cable: [
-      { name: 'Cable Pushdowns', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'Cable Crunches', defSets: 3, defReps: '15-20', defRest: '30 ث' },
-      { name: 'Cable Chest Fly', defSets: 4, defReps: '12-15', defRest: '60 ث' },
-      { name: 'Cable Rows', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Cable Bicep Curls', defSets: 3, defReps: '12-15', defRest: '45 ث' },
-      { name: 'Cable Lateral Raise', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+      { name: 'Cable Pushdowns', cat: 'push', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'Cable Crunches', cat: 'core', defSets: 3, defReps: '15-20', defRest: '30 ث' },
+      { name: 'Cable Chest Fly', cat: 'push', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'Cable Rows', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Cable Bicep Curls', cat: 'pull', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'Cable Lateral Raise', cat: 'push', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     ],
     gym_machine: [
-      { name: 'Chest Press Machine', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Lat Pulldown Machine', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Leg Press Machine', defSets: 5, defReps: '10-15', defRest: '90 ث' },
-      { name: 'Leg Extension', defSets: 4, defReps: '12-15', defRest: '60 ث' },
-      { name: 'Leg Curl', defSets: 4, defReps: '12-15', defRest: '60 ث' },
-      { name: 'Shoulder Press Machine', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Seated Row Machine', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Pec Deck Fly', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+      { name: 'Chest Press Machine', cat: 'push', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Lat Pulldown Machine', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Leg Press Machine', cat: 'legs', defSets: 5, defReps: '10-15', defRest: '90 ث' },
+      { name: 'Leg Extension', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'Leg Curl', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'Shoulder Press Machine', cat: 'push', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Seated Row Machine', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Pec Deck Fly', cat: 'push', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     ],
     leg_press: [
-      { name: 'Leg Press', defSets: 5, defReps: '10-15', defRest: '90 ث' },
-      { name: 'Calf Raises on Leg Press', defSets: 5, defReps: '15-20', defRest: '45 ث' },
-      { name: 'Single Leg Press', defSets: 4, defReps: '10-12 each leg', defRest: '60 ث' },
-      { name: 'Incline Leg Press', defSets: 4, defReps: '12-15', defRest: '90 ث' },
-      { name: 'Horizontal Leg Press', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+      { name: 'Leg Press', cat: 'legs', defSets: 5, defReps: '10-15', defRest: '90 ث' },
+      { name: 'Calf Raises on Leg Press', cat: 'legs', defSets: 5, defReps: '15-20', defRest: '45 ث' },
+      { name: 'Single Leg Press', cat: 'legs', defSets: 4, defReps: '10-12 each leg', defRest: '60 ث' },
+      { name: 'Incline Leg Press', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '90 ث' },
+      { name: 'Horizontal Leg Press', cat: 'legs', defSets: 4, defReps: '12-15', defRest: '60 ث' },
     ],
     lat_pulldown: [
-      { name: 'Front Lat Pulldown', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Behind Neck Pulldown', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Reverse Grip Pulldown', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'V-Grip Pulldown', defSets: 4, defReps: '10-12', defRest: '60 ث' },
-      { name: 'Face Pull', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+      { name: 'Front Lat Pulldown', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Behind Neck Pulldown', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Reverse Grip Pulldown', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'V-Grip Pulldown', cat: 'pull', defSets: 4, defReps: '10-12', defRest: '60 ث' },
+      { name: 'Face Pull', cat: 'pull', defSets: 3, defReps: '12-15', defRest: '45 ث' },
     ],
     smith_machine: [
-      { name: 'Smith Machine Squat', defSets: 5, defReps: '8-10', defRest: '90 ث' },
-      { name: 'Smith Machine Bench Press', defSets: 4, defReps: '8-10', defRest: '90 ث' },
-      { name: 'Smith Machine Shoulder Press', defSets: 4, defReps: '8-10', defRest: '60 ث' },
-      { name: 'Smith Machine Lunges', defSets: 4, defReps: '10-12 each leg', defRest: '60 ث' },
-      { name: 'Smith Machine RDL', defSets: 4, defReps: '10-12', defRest: '90 ث' },
-      { name: 'Smith Machine Calf Raises', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+      { name: 'Smith Machine Squat', cat: 'legs', defSets: 5, defReps: '8-10', defRest: '90 ث' },
+      { name: 'Smith Machine Bench Press', cat: 'push', defSets: 4, defReps: '8-10', defRest: '90 ث' },
+      { name: 'Smith Machine Shoulder Press', cat: 'push', defSets: 4, defReps: '8-10', defRest: '60 ث' },
+      { name: 'Smith Machine Lunges', cat: 'legs', defSets: 4, defReps: '10-12 each leg', defRest: '60 ث' },
+      { name: 'Smith Machine RDL', cat: 'legs', defSets: 4, defReps: '10-12', defRest: '90 ث' },
+      { name: 'Smith Machine Calf Raises', cat: 'legs', defSets: 4, defReps: '15-20', defRest: '30 ث' },
     ],
   }
 
@@ -698,8 +726,30 @@ function getFallbackPlan(form, lang = 'ar') {
   const focus = typeFocus[trainingType] || typeFocus.general
 
   // Assign exercises to each day based on focus
-  const buildDayExercises = (dayIndex, poolCopy) => {
+  const buildDayExercises = (dayIndex, poolCopy, focusText) => {
     const count = goal === 'strength' ? 4 : 5
+    // For gym training, pick exercises matching the day's muscle focus
+    if (trainingType === 'gym') {
+      const pushKw = lang === 'en' ? ['push', 'chest', 'shoulder', 'triceps', 'upper'] : ['دفع', 'صدر', 'كتف', 'تراي', 'أعلى', 'push']
+      const pullKw = lang === 'en' ? ['pull', 'back', 'biceps', 'rows'] : ['سحب', 'ظهر', 'باي', 'pull']
+      const legsKw = lang === 'en' ? ['legs', 'squat', 'deadlift', 'lower'] : ['أرجل', 'سكوات', 'أسفل', 'legs']
+      let catFilter
+      if (pushKw.some(k => focusText.toLowerCase().includes(k.toLowerCase()))) catFilter = 'push'
+      else if (pullKw.some(k => focusText.toLowerCase().includes(k.toLowerCase()))) catFilter = 'pull'
+      else if (legsKw.some(k => focusText.toLowerCase().includes(k.toLowerCase()))) catFilter = 'legs'
+      if (catFilter) {
+        const filtered = poolCopy.filter(ex => ex.cat === catFilter)
+        if (filtered.length >= count) {
+          const start = (dayIndex * 2) % filtered.length
+          const selected = []
+          for (let i = 0; i < count; i++) {
+            const idx = (start + i) % filtered.length
+            selected.push(adjust(filtered[idx]))
+          }
+          return selected
+        }
+      }
+    }
     const start = (dayIndex * 2) % poolCopy.length
     const selected = []
     for (let i = 0; i < count; i++) {
@@ -716,7 +766,7 @@ function getFallbackPlan(form, lang = 'ar') {
 
   for (let i = 0; i < days; i++) {
     const focusText = focus['d' + (i + 1)] || (lang === 'en' ? 'Balanced exercises' : 'تمارين متوازنة')
-    const exs = buildDayExercises(i, pool)
+    const exs = buildDayExercises(i, pool, focusText)
     const cardio = dailyCardio(i)
     exs.push({ name: `🔥 ${lang === 'en' ? 'Cardio' : 'كارديو'}: ${cardio.name}`, durationMinutes: cardio.duration, sets: '-', reps: '-', rest: '-' })
     dayData.push({
