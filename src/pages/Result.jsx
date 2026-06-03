@@ -7,6 +7,8 @@ export default function Result() {
   const location = useLocation()
   const navigate = useNavigate()
   const { form, result } = location.state || {}
+  console.log("RESULT OBJECT:", result)
+  console.log("DEBUG OBJECT:", result?._debug)
 
   if (!result) {
     return (
@@ -20,6 +22,11 @@ export default function Result() {
 
   return (
     <div className="animate-fade-in space-y-6" id="workout-result">
+      {result?._debug && (
+        <pre className="overflow-x-auto rounded-lg border border-rmared-500/30 bg-black/50 p-3 text-xs text-green-400">
+{JSON.stringify(result._debug, null, 2)}
+        </pre>
+      )}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="cursor-pointer rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-zinc-200">{t('res_back')}</button>
       </div>
@@ -83,6 +90,25 @@ export default function Result() {
                 <span className="text-zinc-400">{ex.sets} × {ex.reps} | {t('res_rest')} {ex.rest}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {result._debug && (
+        <div className="card-glow rounded-xl border border-zinc-700/50 bg-zinc-800/30 p-3">
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-500">DEBUG</h3>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <span className="text-zinc-500">Source:</span>
+            <span className="font-medium text-zinc-200">{result._debug.source}</span>
+            <span className="text-zinc-500">Score:</span>
+            <span className={`font-medium ${result._debug.score >= 85 ? 'text-green-400' : 'text-red-400'}`}>{result._debug.score}/100</span>
+            {result._debug.db != null && (
+              <><span className="text-zinc-500">DB / Inferred:</span><span className="font-medium text-zinc-200">{result._debug.db} / {result._debug.inferred}</span></>
+            )}
+            <span className="text-zinc-500">Recognized:</span>
+            <span className="font-medium text-zinc-200">{result._debug.recognized}</span>
+            <span className="text-zinc-500">Unknown:</span>
+            <span className={`font-medium ${result._debug.unknown > 0 ? 'text-red-400' : 'text-zinc-200'}`}>{result._debug.unknown}</span>
           </div>
         </div>
       )}
