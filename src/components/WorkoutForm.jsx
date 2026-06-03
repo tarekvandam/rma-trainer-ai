@@ -58,6 +58,7 @@ export default function WorkoutForm({ onSubmit, loading }) {
     days: '3',
     equipment: [],
     trainingType: 'general',
+    injuries: [],
   })
   const [error, setError] = useState('')
 
@@ -95,6 +96,15 @@ export default function WorkoutForm({ onSubmit, loading }) {
     } else {
       setForm({ ...form, equipment: [...current, value] })
     }
+  }
+
+  const toggleInjury = (value) => {
+    const current = form.injuries
+    const idx = current.indexOf(value)
+    setForm({
+      ...form,
+      injuries: idx >= 0 ? current.filter(v => v !== value) : [...current, value],
+    })
   }
 
   const handleSubmit = (e) => {
@@ -199,6 +209,33 @@ export default function WorkoutForm({ onSubmit, loading }) {
               <span className="text-sm text-zinc-500">{t('wf_equip_none')}</span>
             )}
           </div>
+        </div>
+      </div>
+
+      <div>
+        <label className={labelClass}>{t('wf_injuries')}</label>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: 'shoulder', label: t('inj_shoulder') },
+            { value: 'knee', label: t('inj_knee') },
+            { value: 'lower_back', label: t('inj_lower_back') },
+          ].map((item) => {
+            const checked = form.injuries.includes(item.value)
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => toggleInjury(item.value)}
+                className={`cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  checked
+                    ? 'border-yellow-500 bg-yellow-600/20 text-yellow-400'
+                    : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500'
+                }`}
+              >
+                {checked ? '⚠ ' : ''}{item.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 

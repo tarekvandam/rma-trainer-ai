@@ -3,6 +3,7 @@ export const PULL_DAY = ['VERTICAL_PULL', 'HORIZONTAL_PULL', 'BACK_ACCESSORY', '
 export const LEG_DAY = ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS']
 export const UPPER_DAY = ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'HORIZONTAL_PULL', 'VERTICAL_PULL', 'LATERAL_RAISE', 'BICEPS', 'TRICEPS']
 export const LOWER_DAY = ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS']
+export const ARMS_DAY = ['BICEPS', 'BICEPS', 'TRICEPS', 'TRICEPS', 'REAR_DELT', 'LATERAL_RAISE', 'ABS']
 
 export const DAY_TEMPLATES = {
   push: { structure: PUSH_DAY },
@@ -10,15 +11,17 @@ export const DAY_TEMPLATES = {
   legs: { structure: LEG_DAY },
   upper: { structure: UPPER_DAY },
   lower: { structure: LOWER_DAY },
+  arms: { structure: ARMS_DAY },
 }
 
-export function resolveDayTemplate(focusText, lang) {
+export function resolveDayTemplate(focusText, lang, trainingType = 'gym') {
   const ft = focusText.toLowerCase()
   const pushKw = lang === 'en' ? ['push', 'chest', 'shoulder', 'triceps'] : ['دفع', 'صدر', 'كتف', 'تراي']
   const pullKw = lang === 'en' ? ['pull', 'back', 'biceps', 'rows'] : ['سحب', 'ظهر', 'باي']
   const legsKw = lang === 'en' ? ['legs', 'squat', 'deadlift', 'lower'] : ['أرجل', 'سكوات', 'أسفل']
   const upperKw = lang === 'en' ? ['upper'] : ['أعلى']
   const lowerKw = lang === 'en' ? ['lower'] : ['أسفل']
+  const armsKw = lang === 'en' ? ['arms', 'arm'] : ['أذرع', 'ذراع']
 
   const isPush = pushKw.some(k => ft.includes(k))
   const isPull = pullKw.some(k => ft.includes(k))
@@ -55,8 +58,14 @@ export function resolveDayTemplate(focusText, lang) {
   if (isPush) return DAY_TEMPLATES.push
   if (isPull) return DAY_TEMPLATES.pull
   if (isLegs) return DAY_TEMPLATES.legs
+  if (armsKw.some(k => ft.includes(k))) return DAY_TEMPLATES.arms
 
   if (ft.includes('full') || ft.includes('كامل')) {
+    if (trainingType === 'home') {
+      return {
+        structure: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'HORIZONTAL_PULL', 'SQUAT_PATTERN', 'HIP_HINGE', 'BICEPS', 'TRICEPS'],
+      }
+    }
     return {
       structure: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'VERTICAL_PULL', 'HORIZONTAL_PULL', 'SQUAT_PATTERN', 'HIP_HINGE', 'CHEST_ISOLATION', 'BICEPS', 'TRICEPS', 'ABS'],
     }
@@ -89,9 +98,9 @@ export function ensureWeeklyCoverage(dayData, pool, adjust, globalUsedNames) {
     absCount++
   }
 
-  // Inject missing CALVES
+  // Inject missing CALVES (allow reuse since pool may have only one CALVES exercise)
   while (calvesCount < 2) {
-    const calfPool = pool.filter(ex => ex.mov === 'CALVES' && !globalUsedNames.has(ex.name))
+    const calfPool = pool.filter(ex => ex.mov === 'CALVES')
     if (calfPool.length === 0) break
     const target = dayData.find(dd => !dd.exercises.some(e => e.mov === 'CALVES'))
     if (!target) break

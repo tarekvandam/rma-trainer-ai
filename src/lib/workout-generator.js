@@ -1,4 +1,4 @@
-import { getExercisePools, mergePools, tagExercises, generateDayTitle } from './exercise-db.js'
+import { getExercisePools, mergePools, tagExercises, generateDayTitle, filterByInjuries } from './exercise-db.js'
 import { buildDayExercises, adjust } from './exercise-selector.js'
 import { validateWorkout, printDebugReport } from './workout-validator.js'
 import { calculateWorkoutScore } from './quality-control.js'
@@ -42,11 +42,12 @@ function generalCardioOptions(lang, goal) {
 
 // Movement Patterns defined per day type (exact spec from user)
 const MOVEMENT_PATTERNS = {
-  push: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'CHEST_ISOLATION', 'LATERAL_RAISE', 'TRICEPS'],
-  pull: ['VERTICAL_PULL', 'HORIZONTAL_PULL', 'REAR_DELT', 'BICEPS'],
+  push: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'CHEST_ISOLATION', 'LATERAL_RAISE', 'TRICEPS', 'TRICEPS'],
+  pull: ['VERTICAL_PULL', 'HORIZONTAL_PULL', 'BACK_ACCESSORY', 'REAR_DELT', 'BICEPS', 'BICEPS'],
   legs: ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS'],
   upper: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'HORIZONTAL_PULL', 'VERTICAL_PULL', 'LATERAL_RAISE', 'BICEPS', 'TRICEPS'],
   lower: ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS'],
+  arms: ['BICEPS', 'BICEPS', 'TRICEPS', 'TRICEPS', 'REAR_DELT', 'LATERAL_RAISE', 'ABS'],
   fullBody: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'VERTICAL_PULL', 'HORIZONTAL_PULL', 'SQUAT_PATTERN', 'HIP_HINGE', 'CHEST_ISOLATION', 'BICEPS', 'TRICEPS', 'ABS'],
 }
 
@@ -55,7 +56,8 @@ const MOVEMENT_PATTERNS = {
  * Returns: { name, dayFocuses, patterns, splitType }
  */
 export function SplitSelector(form) {
-  const { days, trainingType, level, lang } = form
+  const { trainingType, level, lang } = form
+  const days = parseInt(form.days) || 3
   const equipList = Array.isArray(form.equipment) ? form.equipment : form.equipment ? [form.equipment] : []
   const isGym = trainingType === 'gym'
   const isAdvanced = level === 'intermediate' || level === 'advanced'
@@ -74,7 +76,9 @@ export function SplitSelector(form) {
   }
 
   // Gym training - choose split based on days, level, and equipment
-  if (days <= 3 || !isAdvanced || !hasFullEquip) {
+  // Full Body for: <=3 days OR limited equipment (< 4 days)
+  // Split routines for: 4+ days with full equipment (any level)
+  if (days <= 3 || !hasFullEquip) {
     // Full Body
     const name = lang === 'en' ? `Full Body — ${days}-Day Full Body` : `Full Body — ${days} أيام كامل للجسم`
     const focus = lang === 'en' ? 'Full Body' : 'تمارين كاملة للجسم'
@@ -103,16 +107,23 @@ export function SplitSelector(form) {
     return { name, dayFocuses, patterns, splitType: 'upperLower' }
   }
 
-  // 5+ days: Push / Pull / Legs + Upper / Lower
-  const name = lang === 'en' ? 'Push / Pull / Legs + Upper / Lower' : 'Push / Pull / Legs + Upper / Lower'
-  const cycle = ['push', 'pull', 'legs', 'upper', 'lower']
+  // 5+ days: Push / Pull / Legs + Upper / Lower + Arms (6+)
+  const cycle = days >= 6
+    ? ['push', 'pull', 'legs', 'upper', 'lower', 'arms']
+    : ['push', 'pull', 'legs', 'upper', 'lower']
   const focusMap = {
     push: { en: 'Push (Chest + Shoulders + Triceps)', ar: 'دفع (صدر + كتف + ترايسبس)' },
     pull: { en: 'Pull (Back + Biceps)', ar: 'سحب (ظهر + بايسبس)' },
     legs: { en: 'Legs (Squats + Deadlifts)', ar: 'أرجل (سكوات + ديدليفت)' },
     upper: { en: 'Upper Body', ar: 'أعلى جسم' },
     lower: { en: 'Lower Body', ar: 'أسفل جسم' },
+    arms: { en: 'Arms & Weak Points', ar: 'أذرع ونقاط ضعف' },
   }
+
+  const isSixPlus = days >= 6
+  const splitName = days >= 6
+    ? (lang === 'en' ? 'Push / Pull / Legs + Upper / Lower + Arms' : 'Push / Pull / Legs + Upper / Lower + أذرع')
+    : (lang === 'en' ? 'Push / Pull / Legs + Upper / Lower' : 'Push / Pull / Legs + Upper / Lower')
 
   const dayFocuses = []
   const patterns = []
@@ -121,13 +132,22 @@ export function SplitSelector(form) {
     dayFocuses.push(lang === 'en' ? focusMap[type].en : focusMap[type].ar)
     patterns.push(MOVEMENT_PATTERNS[type])
   }
-  return { name, dayFocuses, patterns, splitType: 'pplUpperLower' }
+  return { name: splitName, dayFocuses, patterns, splitType: isSixPlus ? 'pplUpperLowerArms' : 'pplUpperLower' }
 }
 
 /**
  * WorkoutBuilder: Builds days based on Movement Patterns (not exercise names)
  * Picks exercises from the pool for each movement pattern in the day
  */
+function sortByPriority(candidates) {
+  return candidates.sort((a, b) => {
+    const order = { compound: 0, isolation: 2 }
+    const aP = order[a.type] ?? 1
+    const bP = order[b.type] ?? 1
+    return aP - bP
+  })
+}
+
 export function WorkoutBuilder(form, pool, dayFocuses, patterns, globalUsedNames) {
   const { lang, goal, trainingType } = form
   const dayNames = lang === 'en' ? dayNamesEN : dayNamesAR
@@ -144,13 +164,28 @@ export function WorkoutBuilder(form, pool, dayFocuses, patterns, globalUsedNames
       let candidates = pool.filter(ex => !globalUsedNames.has(ex.name) && ex.mov === movId)
 
       if (candidates.length === 0) {
-        // Fallback to pool-wide search (allows same-day unique ex but different name)
         const usedInDay = new Set(exercises.map(e => e.name))
         candidates = pool.filter(ex => !usedInDay.has(ex.name) && ex.mov === movId)
+        // Prefer globally unused exercises within the fallback
+        const globalUnused = candidates.filter(ex => !globalUsedNames.has(ex.name))
+        if (globalUnused.length > 0) candidates = globalUnused
+      }
+
+      // Sort by priority: compound before isolation
+      if (candidates.length > 1) {
+        sortByPriority(candidates)
+      }
+
+      // Sort VERTICAL_PULL by priority on Upper day: Lat Pulldown > Pull Up > Chin Up
+      if (candidates.length > 1 && movId === 'VERTICAL_PULL' && /upper|أعلى/i.test(focusText)) {
+        candidates.sort((a, b) => {
+          const getPrio = (n) => /lat.?pulldown/i.test(n) ? 0 : /pull.?up/i.test(n) ? 1 : /chin.?up/i.test(n) ? 2 : 3
+          return getPrio(a.name.toLowerCase()) - getPrio(b.name.toLowerCase())
+        })
       }
 
       if (candidates.length > 0) {
-        const pick = candidates[(i * 3 + p * 7) % candidates.length]
+        const pick = candidates[(i * 17 + p * 13) % candidates.length]
         exercises.push(adjust(pick, goal))
         globalUsedNames.add(pick.name)
       }
@@ -356,6 +391,12 @@ export function generateGymPlan(form) {
   let pool = mergePools(pools, equipList)
   tagExercises(pool)
 
+  // Apply injury filtering if specified
+  const injuries = form.injuries || []
+  if (injuries.length > 0) {
+    pool = filterByInjuries(pool, injuries)
+  }
+
   const dayNames = lang === 'en' ? dayNamesEN : dayNamesAR
   const nutriMap = lang === 'en' ? nutriMapEN : nutriMapAR
   const MAX_ATTEMPTS = 8
@@ -388,6 +429,159 @@ export function generateGymPlan(form) {
     // Ensure minimum weekly coverage for ABS (>=2) and CALVES (>=2)
     ensureWeeklyCoverage(dayData, pool, (ex) => adjust(ex, goal), globalUsedNames)
 
+    // Force-insert Real Squat if missing (gym intermediate/advanced) — inside retry loop for QC
+    if (trainingType === 'gym' && (level === 'intermediate' || level === 'advanced')) {
+      const hasRealSquat = dayData.some(dd =>
+        dd.exercises.some(e =>
+          !e.name.includes('Cardio') && !e.name.includes('كارديو') &&
+          /back squat|front squat|hack squat|smith.*squat/i.test(e.name)
+        )
+      )
+      if (!hasRealSquat) {
+        const squatCandidates = pool.filter(ex => !globalUsedNames.has(ex.name) && /back squat|front squat|hack squat|smith.*squat/i.test(ex.name))
+        if (squatCandidates.length > 0) {
+          const squatEl = squatCandidates[0]
+          const enriched = adjust(squatEl, goal)
+          enriched.mov = squatEl.mov
+          const targetDay = dayData.find(dd => /legs|lower|full|أرجل|أسفل|كامل/i.test(dd.focus))
+          if (targetDay) {
+            targetDay.exercises.splice(targetDay.exercises.length - 1, 0, enriched)
+            globalUsedNames.add(squatEl.name)
+            console.log('REAL_SQUAT_INSERTED', squatEl.name, 'into', targetDay.focus)
+          }
+        }
+      }
+    }
+
+    // Limit Lateral Raise to max 2x/week — replace extras before QC
+    const lateralDays = []
+    dayData.forEach((dd, di) => {
+      dd.exercises.forEach(e => {
+        if (!e.name.includes('Cardio') && !e.name.includes('كارديو') && /lateral raise|جانبي/i.test(e.name)) {
+          lateralDays.push({ dayIndex: di, exercise: e })
+        }
+      })
+    })
+    if (lateralDays.length > 2) {
+      const usedInLateralDays = new Set(lateralDays.map(d => d.exercise.name))
+      const replaceOptions = pool.filter(ex =>
+        !usedInLateralDays.has(ex.name) &&
+        /upright row|rear delt fly|face pull|pec deck|جهاز كتف|shoulder.*machine|machine.*shoulder|upright.*row/i.test(ex.name)
+      )
+      for (let ri = 2; ri < lateralDays.length; ri++) {
+        const { dayIndex, exercise } = lateralDays[ri]
+        const replacement = replaceOptions[(ri - 2) % replaceOptions.length]
+        if (replacement) {
+          const idx = dayData[dayIndex].exercises.indexOf(exercise)
+          if (idx >= 0) {
+            dayData[dayIndex].exercises[idx] = { ...replacement, sets: replacement.defSets, reps: replacement.defReps, rest: replacement.defRest }
+            globalUsedNames.add(replacement.name)
+            console.log('LATERAL_RAISE_REPLACED', replacement.name, 'on day', dayIndex)
+          }
+        }
+      }
+    }
+
+    // Force-insert Vertical Pull into any Upper day missing it
+    dayData.forEach(dd => {
+      if (!/upper|أعلى/i.test(dd.focus)) return
+      const hasVP = dd.exercises.some(e =>
+        !e.name.includes('Cardio') && !e.name.includes('كارديو') &&
+        (e.mov === 'VERTICAL_PULL')
+      )
+      if (!hasVP) {
+        let vpPool = pool.filter(ex => !globalUsedNames.has(ex.name) && ex.mov === 'VERTICAL_PULL')
+        if (vpPool.length === 0) {
+          vpPool = pool.filter(ex => ex.mov === 'VERTICAL_PULL')
+        }
+        if (vpPool.length > 0) {
+          const vpEl = adjust(vpPool[0], goal)
+          vpEl.mov = vpPool[0].mov
+          dd.exercises.splice(dd.exercises.length - 1, 0, vpEl)
+          console.log('VERTICAL_PULL_INSERTED', vpPool[0].name, 'into', dd.focus)
+        }
+      }
+    })
+
+    // Clean Arms day: replace any SHOULDER_COMPOUND in REAR_DELT/LATERAL_RAISE positions with proper alternatives
+    dayData.forEach(dd => {
+      if (!/arms|arm|أذرع|ذراع/i.test(dd.focus)) return
+      const armsRearLateralSlots = [4, 5] // indices 4=REAR_DELT, 5=LATERAL_RAISE in arms template
+      armsRearLateralSlots.forEach(slotIdx => {
+        if (slotIdx >= dd.exercises.length) return
+        const ex = dd.exercises[slotIdx]
+        if (!ex || ex.name.includes('Cardio') || ex.name.includes('كارديو')) return
+        if (ex.mov === 'REAR_DELT' || ex.mov === 'LATERAL_RAISE') return
+        // Wrong exercise type — find a replacement
+        const desired = slotIdx === 4 ? 'REAR_DELT' : 'LATERAL_RAISE'
+        let replacement = pool.filter(e => !globalUsedNames.has(e.name) && e.mov === desired)
+        if (replacement.length === 0) {
+          // Try fallback to the other delt type
+          const alt = desired === 'REAR_DELT' ? 'LATERAL_RAISE' : 'REAR_DELT'
+          replacement = pool.filter(e => !globalUsedNames.has(e.name) && e.mov === alt)
+        }
+        if (replacement.length === 0) {
+          // Allow re-use
+          replacement = pool.filter(e => e.mov === desired)
+        }
+        if (replacement.length > 0) {
+          const repl = adjust(replacement[0], goal)
+          repl.mov = replacement[0].mov
+          dd.exercises[slotIdx] = repl
+          globalUsedNames.add(replacement[0].name)
+          console.log('ARMS_CLEANUP_REPLACED', ex.name, '→', replacement[0].name, 'on arms day')
+        }
+      })
+    })
+
+    // ---- Volume Auto Balance (generalized for all muscle groups) ----
+    const VOL_RANGES = {
+      Chest: { min: 10, max: 20 }, Back: { min: 12, max: 22 }, Shoulders: { min: 10, max: 20 },
+      Quads: { min: 10, max: 18 }, Hamstrings: { min: 8, max: 16 },
+      Biceps: { min: 8, max: 16 }, Triceps: { min: 8, max: 16 },
+      Calves: { min: 6, max: 15 }, Abs: { min: 6, max: 15 },
+    }
+    const volMS = {}
+    dayData.forEach(d => d.exercises.forEach(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+      ;(e.primaryMuscles || []).forEach(m => { volMS[m] = (volMS[m] || 0) + (parseInt(e.sets) || 3) })
+    }))
+    const volG = {}
+    for (const [m, s] of Object.entries(volMS)) {
+      if (['Front Delts','Side Delts','Rear Delts'].includes(m)) volG['Shoulders'] = (volG['Shoulders'] || 0) + s
+      else volG[m] = (volG[m] || 0) + s
+    }
+    for (const muscle of Object.keys(VOL_RANGES)) {
+      const range = VOL_RANGES[muscle]
+      let curr = volG[muscle] || 0
+      while (curr > range.max) {
+        let found = false
+        for (const d of dayData) for (const e of d.exercises) {
+          const pm = e.primaryMuscles || []
+          const sv = parseInt(e.sets) || 3
+          if (sv > 1 && pm.includes(muscle)) {
+            e.sets = (sv - 1).toString(); curr--; found = true
+            console.log('VOLUME_AUTO: Reduced', e.name, 'to', sv-1, 'sets (', muscle, curr, ')')
+            break
+          }
+        }
+        if (!found) break
+      }
+      while (curr < range.min) {
+        let found = false
+        for (const d of dayData) for (const e of d.exercises) {
+          const pm = e.primaryMuscles || []
+          const sv = parseInt(e.sets) || 3
+          if (pm.includes(muscle)) {
+            e.sets = (sv + 1).toString(); curr++; found = true
+            console.log('VOLUME_AUTO: Boosted', e.name, 'to', sv+1, 'sets (', muscle, curr, ')')
+            break
+          }
+        }
+        if (!found) break
+      }
+    }
+
     // Regenerate day titles from actual exercises (preserving focus)
     dayData.forEach((dd, i) => {
       const title = generateDayTitle(dd, lang, splitConfig.dayFocuses[i] || null)
@@ -408,7 +602,7 @@ export function generateGymPlan(form) {
       report = { allPassed: true }
       qcResult = { total: 100, verdict: 'PASS' }
     }
-  } while ((!report.allPassed || (qcResult && qcResult.verdict === 'REGENERATE')) && attempts < MAX_ATTEMPTS)
+  } while ((!report.allPassed || (qcResult && qcResult.verdict !== 'PASS')) && attempts < MAX_ATTEMPTS)
 
   // Strip metadata before returning to user
   dayData.forEach(dd => {
@@ -464,8 +658,15 @@ export function generateGymPlan(form) {
      trainingType: lang === 'en'
        ? ({ mma: 'MMA', boxing: 'Boxing', kickboxing: 'Kickboxing', bjj: 'Jiu-Jitsu', muay_thai: 'Muay Thai', taekwondo: 'Taekwondo', karate: 'Karate', wrestling: 'Wrestling', gym: 'Gym (Full Equipment)', general: 'General Fitness' }[trainingType] || 'General Fitness')
        : ({ mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', gym: 'جيم (معدات كاملة)', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة'),
-     tips,
-     _qc: qcResult,
+      tips,
+      progressiveOverload: {
+        week1: lang === 'en' ? 'Baseline — follow the rep/set scheme above' : 'الأسبوع 1 — الأساس — اتبع الجدول أعلاه',
+        week2: lang === 'en' ? '+1 rep on all main exercises' : 'إضافة تكرار واحد في جميع التمارين الرئيسية',
+        week3: lang === 'en' ? '+1 rep on all main exercises' : 'إضافة تكرار واحد آخر',
+        week4: lang === 'en' ? '+2.5% weight on main compound lifts' : 'إضافة 2.5% من الوزن على التمارين المركبة الرئيسية',
+        week5: lang === 'en' ? 'Repeat cycle (back to baseline +2.5%)' : 'إعادة الدورة (العودة للأساس مع زيادة 2.5%)',
+      },
+      _qc: qcResult,
     }
     return result
 }
@@ -592,7 +793,13 @@ function generateEmergencyPlan(form, lang, w, h, a, days, goal, level, equipList
       ? ({ mma: 'MMA', boxing: 'Boxing', kickboxing: 'Kickboxing', bjj: 'Jiu-Jitsu', muay_thai: 'Muay Thai', taekwondo: 'Taekwondo', karate: 'Karate', wrestling: 'Wrestling', gym: 'Gym (Full Equipment)', general: 'General Fitness' }[trainingType] || 'General Fitness')
       : ({ mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', gym: 'جيم (معدات كاملة)', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة'),
     tips,
-    _qc: qcResult,
+    progressiveOverload: {
+      week1: lang === 'en' ? 'Baseline — follow the rep/set scheme above' : 'الأسبوع 1 — الأساس — اتبع الجدول أعلاه',
+      week2: lang === 'en' ? '+1 rep on all main exercises' : 'إضافة تكرار واحد في جميع التمارين الرئيسية',
+      week3: lang === 'en' ? '+1 rep on all main exercises' : 'إضافة تكرار واحد آخر',
+      week4: lang === 'en' ? '+2.5% weight on main compound lifts' : 'إضافة 2.5% من الوزن على التمارين المركبة الرئيسية',
+      week5: lang === 'en' ? 'Repeat cycle (back to baseline +2.5%)' : 'إعادة الدورة (العودة للأساس مع زيادة 2.5%)',
+    },
   }
 }
 
@@ -679,6 +886,13 @@ function generateHardcodedEmergencyPlan(form, lang, w, h, a, days, goal, level, 
       ? ({ mma: 'MMA', boxing: 'Boxing', kickboxing: 'Kickboxing', bjj: 'Jiu-Jitsu', muay_thai: 'Muay Thai', taekwondo: 'Taekwondo', karate: 'Karate', wrestling: 'Wrestling', gym: 'Gym (Full Equipment)', general: 'General Fitness' }[trainingType] || 'General Fitness')
       : ({ mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', gym: 'جيم (معدات كاملة)', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة'),
     tips,
+    progressiveOverload: {
+      week1: lang === 'en' ? 'Baseline — follow the rep/set scheme above' : 'الأسبوع 1 — الأساس — اتبع الجدول أعلاه',
+      week2: lang === 'en' ? '+1 rep on all main exercises' : 'إضافة تكرار واحد في جميع التمارين الرئيسية',
+      week3: lang === 'en' ? '+1 rep on all main exercises' : 'إضافة تكرار واحد آخر',
+      week4: lang === 'en' ? '+2.5% weight on main compound lifts' : 'إضافة 2.5% من الوزن على التمارين المركبة الرئيسية',
+      week5: lang === 'en' ? 'Repeat cycle (back to baseline +2.5%)' : 'إعادة الدورة (العودة للأساس مع زيادة 2.5%)',
+    },
     _qc: { total: 60, verdict: 'EMERGENCY' }, // Low score but we have to return something
   }
 }

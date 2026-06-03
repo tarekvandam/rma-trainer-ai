@@ -12,6 +12,9 @@ const exercisePoolsAR = {
     { name: 'نط (Jumping Jacks)', cat: 'core', type: 'isolation', defSets: 4, defReps: '45 ث', defRest: '15 ث' },
     { name: 'متسلق الجبال (Mountain Climbers)', cat: 'core', type: 'isolation', defSets: 3, defReps: '30 ث', defRest: '20 ث' },
     { name: 'تمدد ظهر (Cobra Stretch)', cat: 'core', type: 'isolation', defSets: 2, defReps: '30 ث', defRest: '15 ث' },
+    { name: 'رفع سمانة (Calf Raises)', cat: 'legs', type: 'isolation', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+    { name: 'ضغط بايك (Pike Push-ups)', cat: 'push', type: 'compound', defSets: 3, defReps: '10-15', defRest: '60 ث' },
+    { name: 'رفع حوض برجل واحدة (Single Leg Glute Bridge)', cat: 'legs', type: 'isolation', defSets: 3, defReps: '12-15 لكل رجل', defRest: '45 ث' },
   ],
   dumbbell: [
     { name: 'دمبل بنش برس (Dumbbell Bench Press)', cat: 'push', type: 'compound', defSets: 4, defReps: '10-12', defRest: '60 ث' },
@@ -23,6 +26,8 @@ const exercisePoolsAR = {
     { name: 'دمبل اندفاع (Dumbbell Lunges)', cat: 'legs', type: 'compound', defSets: 3, defReps: '10-12 لكل رجل', defRest: '60 ث' },
     { name: 'دمبل روسيان تويست (Russian Twist)', cat: 'core', type: 'isolation', defSets: 3, defReps: '16-20', defRest: '30 ث' },
     { name: 'دمبل ثراستر (Dumbbell Thrusters)', cat: 'push', type: 'compound', defSets: 3, defReps: '10-12', defRest: '60 ث' },
+    { name: 'دمبل رفع جانبي (Dumbbell Lateral Raise)', cat: 'push', type: 'isolation', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+    { name: 'دمبل رفع خلفي (Dumbbell Rear Delt Fly)', cat: 'pull', type: 'isolation', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     { name: 'دمبل رفع سمانة (Calf Raises)', cat: 'legs', type: 'isolation', defSets: 4, defReps: '15-20', defRest: '30 ث' },
   ],
   barbell: [
@@ -52,6 +57,15 @@ const exercisePoolsAR = {
     { name: 'باند بايسبس (Band Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '30 ث' },
     { name: 'باند مشي جانبي (Lateral Walks)', cat: 'legs', type: 'isolation', defSets: 3, defReps: '12-15 كل اتجاه', defRest: '30 ث' },
     { name: 'باند كرانش (Band Crunches)', cat: 'core', type: 'isolation', defSets: 3, defReps: '20-25', defRest: '30 ث' },
+    { name: 'باند تمديد ترايسبس (Band Triceps Extension)', cat: 'push', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
+    { name: 'باند هامر كرل (Band Hammer Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
+    { name: 'باند صف انحناء (Band Bent-over Rows)', cat: 'pull', type: 'compound', defSets: 4, defReps: '15-20', defRest: '45 ث' },
+    { name: 'باند صف يد واحدة (Band One-arm Rows)', cat: 'pull', type: 'compound', defSets: 4, defReps: '15-20 لكل يد', defRest: '60 ث' },
+    { name: 'باند قرفصاء كوب (Band Goblet Squats)', cat: 'legs', type: 'compound', defSets: 4, defReps: '20-25', defRest: '60 ث' },
+    { name: 'باند رومانيان ديد (Band Romanian Deadlifts)', cat: 'legs', type: 'compound', defSets: 4, defReps: '15-20', defRest: '60 ث' },
+    { name: 'باند تركيز كرل (Band Concentration Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '30 ث' },
+    { name: 'باند تمديد ترايسبس علوي (Band Overhead Triceps Extension)', cat: 'push', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
+    { name: 'باند ضغط كتف جلوس (Band Seated Shoulder Press)', cat: 'push', type: 'compound', defSets: 4, defReps: '15-20', defRest: '60 ث' },
   ],
   pullup_bar: [
     { name: 'عقلة واسعة (Pull-ups)', cat: 'pull', type: 'compound', defSets: 4, defReps: '6-12', defRest: '90 ث' },
@@ -130,6 +144,9 @@ const exercisePoolsEN = {
     { name: 'Jumping Jacks', cat: 'core', type: 'isolation', defSets: 4, defReps: '45 sec', defRest: '15 ث' },
     { name: 'Mountain Climbers', cat: 'core', type: 'isolation', defSets: 3, defReps: '30 sec', defRest: '20 ث' },
     { name: 'Cobra Stretch', cat: 'core', type: 'isolation', defSets: 2, defReps: '30 sec', defRest: '15 ث' },
+    { name: 'Calf Raises', cat: 'legs', type: 'isolation', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+    { name: 'Pike Push-ups', cat: 'push', type: 'compound', defSets: 3, defReps: '10-15', defRest: '60 ث' },
+    { name: 'Single Leg Glute Bridge', cat: 'legs', type: 'isolation', defSets: 3, defReps: '12-15 each leg', defRest: '45 ث' },
   ],
   dumbbell: [
     { name: 'Dumbbell Bench Press', cat: 'push', type: 'compound', defSets: 4, defReps: '10-12', defRest: '60 ث' },
@@ -141,6 +158,8 @@ const exercisePoolsEN = {
     { name: 'Dumbbell Lunges', cat: 'legs', type: 'compound', defSets: 3, defReps: '10-12 each leg', defRest: '60 ث' },
     { name: 'Russian Twist', cat: 'core', type: 'isolation', defSets: 3, defReps: '16-20', defRest: '30 ث' },
     { name: 'Dumbbell Thrusters', cat: 'push', type: 'compound', defSets: 3, defReps: '10-12', defRest: '60 ث' },
+    { name: 'Dumbbell Lateral Raise', cat: 'push', type: 'isolation', defSets: 4, defReps: '12-15', defRest: '45 ث' },
+    { name: 'Dumbbell Rear Delt Fly', cat: 'pull', type: 'isolation', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     { name: 'Calf Raises', cat: 'legs', type: 'isolation', defSets: 4, defReps: '15-20', defRest: '30 ث' },
   ],
   barbell: [
@@ -170,6 +189,15 @@ const exercisePoolsEN = {
     { name: 'Band Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '30 ث' },
     { name: 'Lateral Walks', cat: 'legs', type: 'isolation', defSets: 3, defReps: '12-15 each dir', defRest: '30 ث' },
     { name: 'Band Crunches', cat: 'core', type: 'isolation', defSets: 3, defReps: '20-25', defRest: '30 ث' },
+    { name: 'Band Triceps Extension', cat: 'push', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
+    { name: 'Band Hammer Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
+    { name: 'Band Bent-over Rows', cat: 'pull', type: 'compound', defSets: 4, defReps: '15-20', defRest: '45 ث' },
+    { name: 'Band One-arm Rows', cat: 'pull', type: 'compound', defSets: 4, defReps: '15-20 each arm', defRest: '60 ث' },
+    { name: 'Band Goblet Squats', cat: 'legs', type: 'compound', defSets: 4, defReps: '20-25', defRest: '60 ث' },
+    { name: 'Band Romanian Deadlifts', cat: 'legs', type: 'compound', defSets: 4, defReps: '15-20', defRest: '60 ث' },
+    { name: 'Band Concentration Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '30 ث' },
+    { name: 'Band Overhead Triceps Extension', cat: 'push', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
+    { name: 'Band Seated Shoulder Press', cat: 'push', type: 'compound', defSets: 4, defReps: '15-20', defRest: '60 ث' },
   ],
   pullup_bar: [
     { name: 'Pull-ups', cat: 'pull', type: 'compound', defSets: 4, defReps: '6-12', defRest: '90 ث' },
@@ -250,9 +278,10 @@ export function getMovement(ex) {
       return 'TRICEPS'
     }
     if (/dip|انخفاض/.test(n)) return 'TRICEPS'
-    if (/bench|صدر|بنش/.test(n) && !/shoulder|كتف|overhead/.test(n)) return 'CHEST_COMPOUND'
+    if (/pike/.test(n)) return 'SHOULDER_COMPOUND'
+    if (/bench|chest|صدر|بنش/.test(n) && !/shoulder|كتف|overhead/.test(n)) return 'CHEST_COMPOUND'
     if (/shoulder|overhead|press|كتف|ضغط كتف/.test(n)) return 'SHOULDER_COMPOUND'
-    if (/thruster|ثراستر/.test(n)) return 'CHEST_COMPOUND'
+    if (/thruster|ثراستر/.test(n)) return 'SHOULDER_COMPOUND'
     if (/clean|turkish/.test(n)) return 'SHOULDER_COMPOUND'
     if (/push.?up|ضغط/.test(n)) return 'CHEST_COMPOUND'
     return 'CHEST_COMPOUND'
@@ -265,12 +294,16 @@ export function getMovement(ex) {
       return 'BICEPS'
     }
     if (/pull.?up|chin.?up|pulldown|عقلة|لات/.test(n)) return 'VERTICAL_PULL'
-    if (/row|رف|سحب/.test(n) && !/face|وجه/.test(n)) return 'HORIZONTAL_PULL'
+    if (/row|رف|سحب/.test(n) && !/face|وجه/.test(n)) {
+      if (/cable.*row|seated.*row|جهاز.*ظهر/i.test(n)) return 'BACK_ACCESSORY'
+      return 'HORIZONTAL_PULL'
+    }
     if (/face pull|وجه/.test(n)) return 'REAR_DELT'
     return 'BACK_ACCESSORY'
   }
 
   if (cat === 'legs') {
+    if (/glute bridge|رفع الحوض/.test(n)) return 'HIP_HINGE'
     if (type === 'isolation') {
       if (/leg extension|تمديد|quad/.test(n)) return 'QUAD_ISOLATION'
       if (/leg curl|ثني|hamstring/.test(n)) return 'HAMSTRING'
@@ -319,7 +352,7 @@ export function enrichExercise(ex) {
     return { primaryMuscles: ['Chest', 'Triceps'], secondaryMuscles: ['Front Delts'], movementPattern: 'Vertical Push' }
   }
   if (/thruster|ثراستر/.test(n)) {
-    return { primaryMuscles: ['Quads', 'Shoulders'], secondaryMuscles: ['Glutes', 'Core'], movementPattern: 'Squat + Press' }
+    return { primaryMuscles: ['Front Delts', 'Quads'], secondaryMuscles: ['Glutes', 'Core', 'Triceps'], movementPattern: 'Vertical Push' }
   }
   if (/turkish|تركش/.test(n)) {
     return { primaryMuscles: ['Shoulders', 'Core'], secondaryMuscles: ['Quads', 'Glutes'], movementPattern: 'Full Body' }
@@ -364,6 +397,27 @@ export function enrichExercise(ex) {
     secondaryMuscles: [...info.secondary],
     movementPattern: info.pattern,
   }
+}
+
+// Filter exercises based on injury modifiers
+export function filterByInjuries(pool, injuries) {
+  if (!injuries || injuries.length === 0) return pool
+  return pool.filter(ex => {
+    const n = ex.name.toLowerCase()
+    if (injuries.includes('shoulder')) {
+      // Exclude: overhead press, dips, upright row, behind neck, heavy fly
+      if (/overhead press|shoulder press|dip|انخفاض|upright row|behind neck/i.test(n)) return false
+    }
+    if (injuries.includes('knee')) {
+      // Exclude: deep squats, lunges, step-ups, leg extension
+      if (/squat|lunge|قرفصاء|اندفاع|step.?up|leg extension|تمديد/i.test(n)) return false
+    }
+    if (injuries.includes('lower_back')) {
+      // Exclude: deadlift, good morning, heavy row, hyperextension
+      if (/deadlift|rdl|romanian|رف ميت|رومانيان|good morning|hyperextension|stiff.?leg/i.test(n)) return false
+    }
+    return true
+  })
 }
 
 // Tag all exercises in a pool with movement pattern + muscle data

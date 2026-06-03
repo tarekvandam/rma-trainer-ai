@@ -76,7 +76,39 @@ export function validateWorkout(planOrDays) {
     }
   })
 
-  // 6. Unknown exercise ratio — hard fail if > 50% unrecognized
+  // 7. Upper day must include VERTICAL_PULL
+  days.forEach((day, i) => {
+    const dayNum = i + 1
+    const f = (day.focus || day.day || '').toLowerCase()
+    if (/upper|أعلى/.test(f)) {
+      const hasVP = (day.exercises || []).some(e =>
+        e.name && !e.name.includes('Cardio') && !e.name.includes('كارديو') && e.mov === 'VERTICAL_PULL'
+      )
+      if (!hasVP) {
+        errors.push(`Day ${dayNum}: Upper day must include a Vertical Pull (VERTICAL_PULL) exercise`)
+      }
+    }
+  })
+
+  // 8. Exercise metadata — reject if any exercise has empty sets/reps/rest
+  days.forEach((day, i) => {
+    const dayNum = i + 1
+    ;(day.exercises || []).forEach((e, ei) => {
+      if (e.name && !e.name.includes('Cardio') && !e.name.includes('كارديو')) {
+        const missing = []
+        if (!e.sets || e.sets === '' || e.sets === '-') missing.push('sets')
+        if (!e.reps || e.reps === '' || e.reps === '-') missing.push('reps')
+        if (!e.rest || e.rest === '' || e.rest === '-') missing.push('rest')
+        if (missing.length > 0) {
+          const msg = `INVALID_EXERCISE_METADATA: Day ${dayNum}, "${e.name}" missing ${missing.join(', ')}`
+          errors.push(msg)
+          console.log(msg)
+        }
+      }
+    })
+  })
+
+  // 9. Unknown exercise ratio — hard fail if > 50% unrecognized
   const allReal = []
   days.forEach(d => {
     ;(d.exercises || []).forEach(e => {

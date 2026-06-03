@@ -92,6 +92,10 @@ const ar = {
   // Generator
   gen_title: 'مولد خطط التدريب',
   gen_desc: 'املأ بياناتك واحصل على خطة تدريب ذكية مبنية بالذكاء الاصطناعي',
+  wf_injuries: 'الإصابات (اختياري)',
+  inj_shoulder: 'الكتف',
+  inj_knee: 'الركبة',
+  inj_lower_back: 'أسفل الظهر',
   // Result
   res_title: 'خطتك التدريبية',
   res_goal: 'الهدف',
@@ -584,6 +588,10 @@ const en = {
   equip_gym_all: 'Select All',
   gen_title: 'Workout Plan Generator',
   gen_desc: 'Fill in your details and get an AI-powered smart training plan',
+  wf_injuries: 'Injuries (optional)',
+  inj_shoulder: 'Shoulder',
+  inj_knee: 'Knee',
+  inj_lower_back: 'Lower Back',
   res_title: 'Your Training Plan',
   res_goal: 'Goal',
   res_split: 'Split',

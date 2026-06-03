@@ -15,21 +15,21 @@ export function calculateWorkoutScore(plan) {
   const splitScore = split.passed ? 20 : 0
   const missingPatterns = 6 - countTrue(movement)
   const movementScore = Math.round(Math.max(0, 20 - missingPatterns * (20 / 6)))
-  const duplicateScore = dup.passed ? 20 : 0
+  const duplicateScore = dup.passed ? 20 : Math.max(0, 20 - dup.weeklyOver2.length * 2 - dup.withinDay.length * 5)
   const missingMuscles = muscle.missing.length
   const muscleScore = Math.round(Math.max(0, 20 - missingMuscles * (20 / 12)))
   const equipmentScore = equip.passed ? 20 : 0
 
   let total = splitScore + movementScore + duplicateScore + muscleScore + equipmentScore
 
-  // Real Squat penalty: -15 if gym intermediate+ and no real squat
+  // Real Squat penalty: -20 if gym intermediate+ and no real squat
   const isGymUser = equipList.length === 0 || equipList.some(e => GYM_EQUIPMENT.includes(e))
   const needsRealSquat = isGymUser && (level === 'intermediate' || level === 'advanced')
   if (needsRealSquat && !realSquat.found) {
-    total -= 15
+    total -= 20
   }
 
-  // Push day diversity penalty: -5 if违规
+  // Push day diversity penalty: -5
   if (!pushDiversity.passed) {
     total -= 5
   }
@@ -38,6 +38,21 @@ export function calculateWorkoutScore(plan) {
   if (upperDayCheck.violations.length > 0) {
     total -= upperDayCheck.violations.length * 10
   }
+
+  // Pull Day Volume check: -5 if missing Secondary Pull
+  const pullDayVolume = checkPullDayVolume(days)
+  const pullDayVolumePenalty = pullDayVolume.passed ? 0 : -5
+  total += pullDayVolumePenalty
+
+  // Lateral Raise frequency: no penalty but check (handled by generator)
+  const lateralRaiseFreq = checkLateralRaiseFrequency(days)
+
+  // Weekly Muscle Volume Validation: -10 per muscle out of range
+  const weeklyVolume = checkWeeklyMuscleVolume(days)
+  let volumePenalty = 0
+  const volumeViolations = weeklyVolume.filter(v => !v.inRange)
+  volumePenalty = volumeViolations.length * -10
+  total += volumePenalty
 
   const splitType = detectSplitType(days)
 
@@ -49,9 +64,12 @@ export function calculateWorkoutScore(plan) {
     duplicate: { score: duplicateScore, ...dup },
     muscle: { score: muscleScore, present: muscle.present, missing: muscle.missing },
     equipment: { score: equipmentScore, ...equip },
-    realSquat: { found: realSquat.found, exercises: realSquat.exercises, penalty: needsRealSquat && !realSquat.found ? -15 : 0 },
+    realSquat: { found: realSquat.found, exercises: realSquat.exercises, penalty: needsRealSquat && !realSquat.found ? -20 : 0 },
     pushDiversity: { passed: pushDiversity.passed, violations: pushDiversity.violations, penalty: pushDiversity.passed ? 0 : -5 },
     upperDayCheck: { passed: upperDayCheck.passed, violations: upperDayCheck.violations, penalty: upperDayCheck.violations.length * -10 },
+    pullDayVolume: pullDayVolume,
+    lateralRaiseFreq: lateralRaiseFreq,
+    weeklyVolume: { details: weeklyVolume, penalty: volumePenalty },
     splitType,
     verdict: total >= 90 ? 'PASS' : total >= 80 ? 'REGENERATE' : 'FAIL',
   }
@@ -62,10 +80,13 @@ export function calculateWorkoutScore(plan) {
   console.log(`Duplicate Validation:    ${dup.passed ? '✔' : '✗'} ${duplicateScore}/20`)
   console.log(`Muscle Coverage:         ${missingMuscles === 0 ? '✔' : '✗'} ${muscleScore}/20  (missing: ${missingMuscles > 0 ? muscle.missing.join(', ') : 'none'})`)
   console.log(`Equipment Validation:    ${equip.passed ? '✔' : '✗'} ${equipmentScore}/20`)
-  console.log(`Real Squat Found:        ${realSquat.found ? '✔ YES' : '✗ NO'} ${needsRealSquat && !realSquat.found ? '(-15 penalty)' : ''}`)
+  console.log(`Real Squat Found:        ${realSquat.found ? '✔ YES' : '✗ NO'} ${needsRealSquat && !realSquat.found ? '(-20 penalty)' : ''}`)
   console.log(`Push Day Diversity:      ${pushDiversity.passed ? '✔' : '✗ VIOLATION'} ${!pushDiversity.passed ? '(-5 penalty)' : ''}`)
   const upperMissing = upperDayCheck.violations.map(v => v.missing).join(', ')
   console.log(`Upper Day Patterns:      ${upperDayCheck.passed ? '✔' : '✗ MISSING'} ${!upperDayCheck.passed ? `(-${upperDayCheck.violations.length * 10} penalty: ${upperMissing})` : ''}`)
+  console.log(`Pull Day Secondary Pull: ${pullDayVolume.passed ? '✔' : '✗ MISSING'} ${!pullDayVolume.passed ? '(-5 penalty)' : ''}`)
+  console.log(`Lateral Raise Frequency: ${lateralRaiseFreq.passed ? `✔ ${lateralRaiseFreq.count}x` : `✗ ${lateralRaiseFreq.count}x (fixed by generator)`}`)
+  console.log(`Weekly Volume:           ${volumeViolations.length === 0 ? '✔ ALL IN RANGE' : `✗ ${volumeViolations.map(v => `${v.muscle} ${v.sets}s`).join(', ')} (-${volumePenalty} penalty)`}`)
   console.log(`Split Type:              ${splitType}`)
   console.log(`-----------------------------------------------------`)
   console.log(`Workout Score: ${Math.max(0, Math.round(total))}/100`)
@@ -332,14 +353,95 @@ function detectSplitType(days) {
   // Check for Upper/Lower keywords in focus
   const hasUpper = days.some(d => (d.focus || '').toLowerCase().includes('upper'))
   const hasLower = days.some(d => (d.focus || '').toLowerCase().includes('lower'))
+  const hasArms = days.some(d => (d.focus || '').toLowerCase().includes('arms') || (d.focus || '').toLowerCase().includes('أذرع'))
 
   if (unique.includes('push') && unique.includes('pull') && unique.includes('legs')) {
-    if (hasUpper || hasLower) return 'PPL + Upper/Lower'
+    if (hasUpper || hasLower) return hasArms ? 'PPL + Upper/Lower + Arms' : 'PPL + Upper/Lower'
     return 'PPL'
   }
   if (hasUpper && hasLower) return 'Upper/Lower'
   if (unique.includes('push') && unique.includes('pull') && !unique.includes('legs')) return 'Upper/Lower'
-  if (unique.length <= 2 && unique.every(t => t === 'push' || t === 'pull')) return 'Upper/Lower'
   if (days.length === 3 && unique.every(t => t === 'full' || t === 'push+pull+legs')) return 'Full Body'
   return 'Custom'
 }
+
+// ---------- 9. Pull Day Volume Check (Secondary Pull) ----------
+function checkPullDayVolume(days) {
+  const violations = []
+  days.forEach(d => {
+    const type = detectDayType(d.focus || d.day)
+    if (type !== 'pull') return
+    const backAccessoryCount = d.exercises.filter(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return false
+      const mov = e.movementPattern || e.mov || ''
+      return mov === 'BACK_ACCESSORY' || mov === 'Row Variation'
+    }).length
+    if (backAccessoryCount === 0) {
+      violations.push({ day: d.day || d.focus, issue: 'Missing secondary pull (BACK_ACCESSORY)' })
+    }
+  })
+  return { passed: violations.length === 0, violations }
+}
+
+// ---------- 10. Lateral Raise Frequency Check ----------
+function checkLateralRaiseFrequency(days) {
+  let count = 0
+  days.forEach(d => {
+    d.exercises.forEach(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+      if (/lateral raise|جانبي/i.test(e.name)) count++
+    })
+  })
+  return { passed: count <= 2, count }
+}
+
+// ---------- 11. Weekly Muscle Volume Validation ----------
+const VOLUME_RANGES = {
+  Chest: { min: 10, max: 20 },
+  Back: { min: 12, max: 22 },
+  'Front Delts': { min: 10, max: 20, group: 'Shoulders' },
+  'Side Delts': { min: 10, max: 20, group: 'Shoulders' },
+  'Rear Delts': { min: 10, max: 20, group: 'Shoulders' },
+  Quads: { min: 10, max: 18 },
+  Hamstrings: { min: 8, max: 16 },
+  Biceps: { min: 8, max: 16 },
+  Triceps: { min: 8, max: 16 },
+  Calves: { min: 6, max: 15 },
+  Abs: { min: 6, max: 15 },
+}
+
+function checkWeeklyMuscleVolume(days) {
+  const muscleSets = {}
+  days.forEach(d => {
+    d.exercises.forEach(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+      const primary = e.primaryMuscles || []
+      primary.forEach(m => {
+        muscleSets[m] = (muscleSets[m] || 0) + (parseInt(e.sets) || 3)
+      })
+    })
+  })
+
+  // Group by muscle group (Shoulders = Front + Side + Rear Delts)
+  const grouped = {}
+  for (const [muscle, sets] of Object.entries(muscleSets)) {
+    const range = VOLUME_RANGES[muscle]
+    if (range && range.group) {
+      grouped[range.group] = (grouped[range.group] || 0) + sets
+    } else {
+      grouped[muscle] = (grouped[muscle] || 0) + sets
+    }
+  }
+
+  const results = []
+  for (const [muscle, sets] of Object.entries(grouped)) {
+    const range = VOLUME_RANGES[muscle]
+    if (range) {
+      const inRange = sets >= range.min && sets <= range.max
+      results.push({ muscle, sets, min: range.min, max: range.max, inRange })
+    }
+  }
+  return results
+}
+
+
