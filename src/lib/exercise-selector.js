@@ -21,6 +21,9 @@ export function buildDayExercises(dayIndex, poolCopy, focusText, trainingType, g
 
   if (trainingType === 'gym') {
     const template = resolveDayTemplate(focusText, lang)
+    console.log("GENERATOR_VERSION", "ExerciseSelector")
+    console.log("SPLIT_SELECTED", "unknown")
+    console.log("DAY_TEMPLATE", dayIndex, template)
     const structure = template.structure
     const selected = []
 
