@@ -106,8 +106,15 @@ export function calculateWorkoutScore(plan) {
   volumePenalty = volumeViolations.length * -10
   total += volumePenalty
 
+  // Arms Day Validation
+  const armsCheck = checkArmsDay(days)
+  const armsScore = armsCheck.passed ? 10 : Math.max(0, 10 - armsCheck.violations.length * 5)
+
   // Coach Score: new 100-point scoring system
   const coachScore = calculateCoachScore(days, plan)
+
+  // Protein score (use existing protein/weight from hard fail check above)
+  const proteinScore = (protein > 0 && weight > 0 && protein > Math.round(weight * 2.2)) ? 0 : 10
 
   const details = {
     total: Math.max(0, Math.round(total)),
@@ -124,7 +131,11 @@ export function calculateWorkoutScore(plan) {
     lateralRaiseFreq: lateralRaiseFreq,
     weeklyVolume: { details: weeklyVolume, penalty: volumePenalty },
     fullBodyCheck: { passed: fullBodyCheck.passed, violations: fullBodyCheck.violations, penalty: fullBodyPenalty },
+    armsCheck,
     coachScore: coachScore,
+    splitScore: splitScore,
+    proteinScore: proteinScore,
+    armsScore: armsScore,
     splitType,
     verdict: total >= 90 ? 'PASS' : total >= 80 ? 'REGENERATE' : 'FAIL',
     coachVerdict: coachScore.total >= 90 ? 'PASS' : 'REGENERATE',
@@ -146,6 +157,8 @@ export function calculateWorkoutScore(plan) {
   console.log(`Lateral Raise Frequency: ${lateralRaiseFreq.passed ? `✔ ${lateralRaiseFreq.count}x` : `✗ ${lateralRaiseFreq.count}x (fixed by generator)`}`)
   console.log(`Weekly Volume:           ${volumeViolations.length === 0 ? '✔ ALL IN RANGE' : `✗ ${volumeViolations.map(v => `${v.muscle} ${v.sets}s`).join(', ')} (-${volumePenalty} penalty)`}`)
   console.log(`Split Type:              ${splitType}`)
+  console.log(`Arms Day:                ${armsCheck.passed ? '✔' : '✗ VIOLATIONS'} (${armsCheck.violations.join(', ') || 'none'})`)
+  console.log(`Arms Score:              ${armsScore}/10`)
   console.log(`-----------------------------------------------------`)
   console.log(`Workout Score: ${Math.max(0, Math.round(total))}/100`)
   console.log(`Coach Score:   ${coachScore.total}/100 (Balance:${coachScore.balance}/30 Recovery:${coachScore.recovery}/20 Quality:${coachScore.quality}/25 Progression:${coachScore.progression}/15 Specificity:${coachScore.specificity}/10)`)
@@ -800,6 +813,42 @@ function checkWeeklyMuscleVolume(days) {
     }
   }
   return results
+}
+
+// ---------- 12. Arms Day Validation ----------
+function checkArmsDay(days) {
+  const violations = []
+  days.forEach(d => {
+    if (!/arms|arm|أذرع|ذراع/i.test(d.focus || '')) return
+    let bicepsCount = 0
+    let tricepsCount = 0
+    let lateralRaiseCount = 0
+    let rearDeltCount = 0
+    const shoulderIsolationNames = []
+    d.exercises.forEach(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+      const mov = e.movementPattern || e.mov || ''
+      const n = e.name.toLowerCase()
+      if (mov === 'BICEPS' || /bicep.*curl/i.test(n)) bicepsCount++
+      if (mov === 'TRICEPS' || /triceps/i.test(n)) tricepsCount++
+      if (mov === 'LATERAL_RAISE' || /lateral raise|جانبي/i.test(n)) lateralRaiseCount++
+      if (mov === 'REAR_DELT' || /rear delt/i.test(n)) rearDeltCount++
+      if (mov === 'LATERAL_RAISE' || mov === 'REAR_DELT') {
+        shoulderIsolationNames.push(e.name)
+      }
+    })
+    if (bicepsCount < 2) violations.push(`Only ${bicepsCount} biceps (need ≥2)`)
+    if (tricepsCount < 2) violations.push(`Only ${tricepsCount} triceps (need ≥2)`)
+    if (lateralRaiseCount > 1) violations.push(`${lateralRaiseCount} lateral raises (max 1)`)
+    if (rearDeltCount > 1) violations.push(`${rearDeltCount} rear delts (max 1)`)
+    // Check duplicate shoulder isolation
+    const seen = new Set()
+    shoulderIsolationNames.forEach(name => {
+      if (seen.has(name)) violations.push(`Duplicate shoulder isolation: ${name}`)
+      seen.add(name)
+    })
+  })
+  return { passed: violations.length === 0, violations }
 }
 
 

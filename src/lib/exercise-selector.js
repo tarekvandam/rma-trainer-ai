@@ -163,21 +163,6 @@ export function PrescriptionEngine(ex, level, goal) {
     }
   }
 
-  console.log(
-    'PRESCRIPTION_ASSIGNED',
-    ex.name,
-    {
-      reps,
-      rest,
-      sets,
-      level,
-      goal,
-      category: cat,
-      mov: ex.mov || '',
-      type: ex.type || ''
-    }
-  );
-
   if (reps === undefined || reps === null || reps === '') throw new Error('QC_HARD_FAIL: reps is undefined for ' + (ex.name || 'unknown'))
   if (sets === undefined || sets === null || sets === '') throw new Error('QC_HARD_FAIL: sets is undefined for ' + (ex.name || 'unknown'))
   if (rest === undefined || rest === null || rest === '') throw new Error('QC_HARD_FAIL: rest is undefined for ' + (ex.name || 'unknown'))

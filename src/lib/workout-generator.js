@@ -111,11 +111,26 @@ export function SplitSelector(form) {
   }
 
   // 5+ days: Push / Pull / Legs + Upper / Lower + Arms (6+)
-  // Beginner restriction: no PPL splits, use Upper/Lower + Full Body instead
+  // Beginner restriction: no PPL splits
   if (level === 'beginner') {
-    const name = lang === 'en' ? `Upper / Lower + Full Body — ${days}-Day Split` : `أعلى / أسفل + كامل للجسم — ${days} أيام`
     const dayFocuses = []
     const patterns = []
+    if (days === 6) {
+      // 6 days: Upper/Lower repeated
+      const name = lang === 'en' ? `Upper / Lower — ${days}-Day Split` : `أعلى / أسفل — ${days} أيام`
+      for (let i = 0; i < days; i++) {
+        if (i % 2 === 0) {
+          dayFocuses.push(lang === 'en' ? 'Upper Body' : 'أعلى جسم')
+          patterns.push(MOVEMENT_PATTERNS.upper)
+        } else {
+          dayFocuses.push(lang === 'en' ? 'Lower Body' : 'أسفل جسم')
+          patterns.push(MOVEMENT_PATTERNS.lower)
+        }
+      }
+      return { name, dayFocuses, patterns, splitType: 'upperLower' }
+    }
+    // 5 days: Upper/Lower + Full Body (3-day cycle)
+    const name = lang === 'en' ? `Upper / Lower + Full Body — ${days}-Day Split` : `أعلى / أسفل + كامل للجسم — ${days} أيام`
     for (let i = 0; i < days; i++) {
       if (i % 3 === 0) {
         dayFocuses.push(lang === 'en' ? 'Upper Body' : 'أعلى جسم')
@@ -409,6 +424,7 @@ export function generateGymPlan(form) {
   const bmr = Math.round(10 * w + 6.25 * h - 5 * a + 5)
   const proteinFactor = { fat_loss: 2.2, muscle_gain: 2.2, endurance: 1.6, strength: 2.0, general: 2.0 }[goal] || 2.0
   const protein = Math.round(Math.min(w * proteinFactor, w * 2.2))
+  console.log('PROTEIN_DEBUG', JSON.stringify({ weight: w, goal, multiplier: proteinFactor, proteinFinal: protein }))
 
   // Get exercise pools
   const pools = getExercisePools(lang)
@@ -762,20 +778,6 @@ export function generateGymPlan(form) {
      return generateEmergencyPlan(form, lang, w, h, a, days, goal, level, equipList, trainingType, bmr, protein, nutriMap, nutriMapEN, cardioOptsFallback, dayNames)
    }
 
-    dayData.forEach(d => {
-      d.exercises.forEach(e => {
-        if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
-        console.log('FINAL_EXERCISE_DEBUG', JSON.stringify({
-          name: e.name,
-          pattern: e.movementPattern,
-          sets: e.sets,
-          reps: e.reps,
-          rest: e.rest,
-          source: e.repSource,
-        }))
-      })
-    })
-
     const result = {
       split: splitConfig.name,
       days: dayData,
@@ -796,27 +798,14 @@ export function generateGymPlan(form) {
       coachScore: qcResult ? qcResult.coachScore : { total: 60 },
       _qc: qcResult,
     }
-    result.debugVersion = "RMA_DEPLOY_TEST_001"
-    console.log(
-      'PLAN_BEFORE_RETURN',
-      JSON.stringify({
-        split: result.split,
-        days: result.days.map(d => ({
-          day: d.day,
-          focus: d.focus,
-          exercises: d.exercises.map(e => ({
-            name: e.name,
-            sets: e.sets,
-            reps: e.reps,
-            rest: e.rest,
-            source: e.repSource || 'unknown',
-          }))
-        })),
-        dailyCalories: result.dailyCalories,
-        protein: result.protein,
-        bmr: result.bmr
-      }, null, 2)
-    );
+    const qc = qcResult || {}
+    const cs = qc.coachScore || {}
+    console.log('COACH_SCORE', cs.total || 0)
+    console.log('SPLIT_SCORE', qc.splitScore || 0)
+    console.log('PROTEIN_SCORE', qc.proteinScore || (qc.proteinScore === 0 ? 0 : 10))
+    console.log('ARMS_SCORE', qc.armsScore || 0)
+    const finalPass = (!qc.verdict || qc.verdict === 'PASS') && (!qc.coachVerdict || qc.coachVerdict === 'PASS')
+    console.log('FINAL_PASS', finalPass ? 'true' : 'false')
     return result
 }
 
