@@ -169,11 +169,11 @@ export function PrescriptionEngine(ex, level, goal) {
   if (/^\d+-\d+$/.test(reps) && parseMaxRep(reps) > 20) throw new Error('QC_HARD_FAIL: reps exceed 20 max for ' + (ex.name || 'unknown'))
   if (!rest.includes('ث')) throw new Error('QC_HARD_FAIL: rest missing Arabic unit for ' + (ex.name || 'unknown'))
 
-  // Resolve set ranges before return
+  // Resolve set ranges to midpoint: "3-4" → 4, "2-4" → 3, "4-5" → 5
   if (sets && typeof sets === 'string' && sets.includes('-')) {
     const parts = sets.split('-').map(s => parseInt(s.trim()))
     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-      sets = String(parts[0])
+      sets = String(Math.round((parts[0] + parts[1]) / 2))
     }
   }
 

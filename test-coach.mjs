@@ -187,7 +187,7 @@ function checkNutrition(r, w) {
   const protein = parseInt(r.protein)
   assert(!isNaN(bmr) && !isNaN(cals) && !isNaN(protein), `Nutrition values valid (cals=${r.dailyCalories}, protein=${r.protein})`)
   assert(cals >= bmr, `Calories (${cals}) >= BMR (${bmr})`)
-  assert(protein <= Math.round(w * 2.5), `Protein (${protein}g) <= 2.5×${w} = ${Math.round(w * 2.5)}g`)
+  assert(protein <= Math.round(w * 2.2), `Protein (${protein}g) <= 2.2×${w} = ${Math.round(w * 2.2)}g`)
 }
 
 function checkFatLossReps(r, level) {

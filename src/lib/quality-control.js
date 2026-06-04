@@ -343,10 +343,10 @@ function calculateCoachScore(days, plan) {
     return { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }
   }
 
-  // Protein validator: hard cap 2.5 g/kg
+  // Protein validator: hard cap 2.2 g/kg
   const protein = plan._protein || 0
   const weight = plan._weight || 0
-  if (protein > 0 && weight > 0 && protein > Math.round(weight * 2.5)) {
+  if (protein > 0 && weight > 0 && protein > Math.round(weight * 2.2)) {
     return { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }
   }
 

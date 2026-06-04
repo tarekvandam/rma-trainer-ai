@@ -199,7 +199,9 @@ export function WorkoutBuilder(form, pool, dayFocuses, patterns, globalUsedNames
 
     for (let p = 0; p < pats.length; p++) {
       const movId = pats[p]
-      let candidates = pool.filter(ex => !globalUsedNames.has(ex.name) && ex.mov === movId)
+      // On Arms day, BICEPS/TRICEPS can reuse exercises from other days to avoid pool depletion
+      const isArmsBicepsTriceps = /arms|arm|أذرع|ذراع/i.test(focusText) && (movId === 'BICEPS' || movId === 'TRICEPS')
+      let candidates = pool.filter(ex => (isArmsBicepsTriceps || !globalUsedNames.has(ex.name)) && ex.mov === movId)
 
       if (candidates.length === 0) {
         const usedInDay = new Set(exercises.map(e => e.name))
@@ -600,7 +602,7 @@ export function generateGymPlan(form) {
         const ex = dd.exercises[slotIdx]
         if (!ex || ex.name.includes('Cardio') || ex.name.includes('كارديو')) return
         if (ex.mov === 'REAR_DELT' || ex.mov === 'LATERAL_RAISE') return
-        const desired = slotIdx === 2 ? 'REAR_DELT' : 'LATERAL_RAISE'
+        const desired = slotIdx === 4 ? 'REAR_DELT' : 'LATERAL_RAISE'
         let candidates = pool.filter(e => !globalUsedNames.has(e.name) && !existingNames.has(e.name) && e.mov === desired)
         if (candidates.length === 0) {
           const alt = desired === 'REAR_DELT' ? 'LATERAL_RAISE' : 'REAR_DELT'
@@ -792,7 +794,7 @@ export function generateGymPlan(form) {
         if (e.sets && typeof e.sets === 'string' && e.sets.includes('-')) {
           const parts = e.sets.split('-').map(s => parseInt(s.trim()))
           if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-            e.sets = String(parts[0])
+            e.sets = String(Math.round((parts[0] + parts[1]) / 2))
           }
         }
       })
@@ -814,7 +816,7 @@ export function generateGymPlan(form) {
         if (e.sets && typeof e.sets === 'string' && e.sets.includes('-')) {
           const parts = e.sets.split('-').map(s => parseInt(s.trim()))
           if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-            e.sets = String(parts[0])
+            e.sets = String(Math.round((parts[0] + parts[1]) / 2))
           }
         }
       })
