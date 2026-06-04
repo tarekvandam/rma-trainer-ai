@@ -199,12 +199,17 @@ export function WorkoutBuilder(form, pool, dayFocuses, patterns, globalUsedNames
 
     for (let p = 0; p < pats.length; p++) {
       const movId = pats[p]
-      // On Arms day, BICEPS/TRICEPS can reuse exercises from other days to avoid pool depletion
+      // On Arms day, BICEPS/TRICEPS can reuse exercises from other days but NOT within the same day
+      const usedInDay = new Set(exercises.map(e => e.name))
       const isArmsBicepsTriceps = /arms|arm|أذرع|ذراع/i.test(focusText) && (movId === 'BICEPS' || movId === 'TRICEPS')
-      let candidates = pool.filter(ex => (isArmsBicepsTriceps || !globalUsedNames.has(ex.name)) && ex.mov === movId)
+      let candidates
+      if (isArmsBicepsTriceps) {
+        candidates = pool.filter(ex => !usedInDay.has(ex.name) && ex.mov === movId)
+      } else {
+        candidates = pool.filter(ex => !globalUsedNames.has(ex.name) && ex.mov === movId)
+      }
 
       if (candidates.length === 0) {
-        const usedInDay = new Set(exercises.map(e => e.name))
         candidates = pool.filter(ex => !usedInDay.has(ex.name) && ex.mov === movId)
         // Prefer globally unused exercises within the fallback
         const globalUnused = candidates.filter(ex => !globalUsedNames.has(ex.name))
@@ -488,7 +493,7 @@ export function generateGymPlan(form) {
   const trainingType = form.trainingType || 'general'
 
   const bmr = Math.round(10 * w + 6.25 * h - 5 * a + 5)
-  const proteinFactor = { fat_loss: 2.2, muscle_gain: 2.2, endurance: 1.6, strength: 2.0, general: 2.0 }[goal] || 2.0
+  const proteinFactor = { fat_loss: 2.0, muscle_gain: 1.8, endurance: 1.6, strength: 2.0, general: 1.6 }[goal] || 1.6
   const protein = Math.round(Math.min(w * proteinFactor, w * 2.2))
   console.log('PROTEIN_DEBUG', JSON.stringify({ weight: w, goal, multiplier: proteinFactor, proteinFinal: protein }))
 
@@ -788,14 +793,21 @@ export function generateGymPlan(form) {
       continue
     }
 
-    // Resolve set ranges before QC check (second pass for safety)
+    // Resolve ALL set ranges before QC check — only integers allowed
     dayData.forEach(dd => {
       dd.exercises.forEach(e => {
-        if (e.sets && typeof e.sets === 'string' && e.sets.includes('-')) {
-          const parts = e.sets.split('-').map(s => parseInt(s.trim()))
-          if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-            e.sets = String(Math.round((parts[0] + parts[1]) / 2))
-          }
+        if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+        const raw = e.sets
+        if (!raw || typeof raw !== 'string') { e.sets = '3'; return }
+        if (/^\d+$/.test(raw)) return
+        if (raw.includes('-')) {
+          const parts = raw.split('-').map(s => parseInt(s.trim()))
+          if (parts.length >= 1 && !isNaN(parts[0])) {
+            const lo = parts[0], hi = parts.length >= 2 && !isNaN(parts[1]) ? parts[1] : lo
+            e.sets = String(Math.round((lo + hi) / 2))
+          } else { e.sets = '3' }
+        } else {
+          e.sets = '3'
         }
       })
     })
@@ -812,12 +824,16 @@ export function generateGymPlan(form) {
         delete e.primaryMuscles
         delete e.secondaryMuscles
         delete e.movementPattern
-        // Resolve set ranges to single numbers
-        if (e.sets && typeof e.sets === 'string' && e.sets.includes('-')) {
-          const parts = e.sets.split('-').map(s => parseInt(s.trim()))
-          if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-            e.sets = String(Math.round((parts[0] + parts[1]) / 2))
-          }
+        // Resolve set ranges to single integers
+        const raw = e.sets
+        if (raw && typeof raw === 'string' && !/^\d+$/.test(raw)) {
+          if (raw.includes('-')) {
+            const parts = raw.split('-').map(s => parseInt(s.trim()))
+            if (parts.length >= 1 && !isNaN(parts[0])) {
+              const lo = parts[0], hi = parts.length >= 2 && !isNaN(parts[1]) ? parts[1] : lo
+              e.sets = String(Math.round((lo + hi) / 2))
+            } else { e.sets = '3' }
+          } else { e.sets = '3' }
         }
       })
     })
