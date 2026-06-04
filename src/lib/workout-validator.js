@@ -1,3 +1,5 @@
+import { parseMaxRep, parseMinRest } from './exercise-selector.js'
+
 function detectDayType(focus) {
   const f = (focus || '').toLowerCase()
   const pushKw = ['push', 'chest', 'shoulder', 'triceps', 'upper', 'دفع', 'صدر', 'كتف', 'تراي', 'أعلى']
@@ -14,7 +16,7 @@ function detectDayType(focus) {
   return 'other'
 }
 
-export function validateWorkout(planOrDays) {
+export function validateWorkout(planOrDays, level) {
   const errors = []
   const days = Array.isArray(planOrDays) ? planOrDays : (planOrDays?.days || [])
 
@@ -76,7 +78,29 @@ export function validateWorkout(planOrDays) {
     }
   })
 
-  // 7. Upper day must include VERTICAL_PULL
+  // 7. Recovery notes — log warning but don't hard-fail (Coach Score handles soft quality penalty)
+  const muscleDayMap = {}
+  days.forEach((day, di) => {
+    (day.exercises || []).forEach(e => {
+      if (e.name && !e.name.includes('Cardio') && !e.name.includes('كارديو')) {
+        (e.primaryMuscles || []).forEach(m => {
+          if (!muscleDayMap[m]) muscleDayMap[m] = []
+          if (!muscleDayMap[m].includes(di)) muscleDayMap[m].push(di)
+        })
+      }
+    })
+  })
+  for (const [muscle, dayIndices] of Object.entries(muscleDayMap)) {
+    const sorted = [...dayIndices].sort((a, b) => a - b)
+    for (let i = 0; i <= sorted.length - 3; i++) {
+      if (sorted[i + 2] - sorted[i] <= 3) {
+        console.log(`RECOVERY_NOTE: ${muscle} trained on days ${sorted.slice(i, i + 3).map(d => d + 1).join(', ')}, may be frequent — Coach Score will evaluate`)
+        break
+      }
+    }
+  }
+
+  // 8. Upper day must include VERTICAL_PULL
   days.forEach((day, i) => {
     const dayNum = i + 1
     const f = (day.focus || day.day || '').toLowerCase()
@@ -90,7 +114,7 @@ export function validateWorkout(planOrDays) {
     }
   })
 
-  // 8. Exercise metadata — reject if any exercise has empty sets/reps/rest
+  // 9. Exercise metadata — reject if any exercise has empty sets/reps/rest
   days.forEach((day, i) => {
     const dayNum = i + 1
     ;(day.exercises || []).forEach((e, ei) => {
@@ -108,7 +132,54 @@ export function validateWorkout(planOrDays) {
     })
   })
 
-  // 9. Unknown exercise ratio — hard fail if > 50% unrecognized
+  // 10. Hard blocks: compound rep & rest limits (absolute, with level-aware limits)
+  const isBeginner = level === 'beginner'
+  days.forEach((day, i) => {
+    const dayNum = i + 1
+    ;(day.exercises || []).forEach(e => {
+      if (e.name && (e.name.includes('Cardio') || e.name.includes('كارديو'))) return
+      const n = e.name.toLowerCase()
+      const type = e.type || 'compound'
+      if (type !== 'compound') return
+
+      const maxRep = parseMaxRep(e.reps)
+      const minRest = parseMinRest(e.rest)
+
+      if (/deadlift|رف ميت/.test(n) && maxRep > 10) {
+        errors.push(`Day ${dayNum}: ${e.name} has ${e.reps} (max ${maxRep} reps), exceeds deadlift limit of 10`)
+      }
+      if (/(?:^|[^a-z])squat|قرفصاء|سكوات/.test(n) && !/leg press|ليج بريس/.test(n) && maxRep > 12) {
+        errors.push(`Day ${dayNum}: ${e.name} has ${e.reps} (max ${maxRep} reps), exceeds squat limit of 12`)
+      }
+      if (/bench press|بنش/.test(n) && maxRep > 12) {
+        errors.push(`Day ${dayNum}: ${e.name} has ${e.reps} (max ${maxRep} reps), exceeds bench press limit of 12`)
+      }
+      if (isBeginner) {
+        if (/pull.?up|chin.?up|عقلة/.test(n) && maxRep > 10) {
+          errors.push(`Day ${dayNum}: ${e.name} has ${e.reps} (max ${maxRep} reps), exceeds beginner pullup limit of 10`)
+        }
+        if (/row/.test(n) && !/dumbbell|دمبل/.test(n) && maxRep > 12) {
+          errors.push(`Day ${dayNum}: ${e.name} has ${e.reps} (max ${maxRep} reps), exceeds beginner rows limit of 12`)
+        }
+      } else {
+        if (/pull.?up|chin.?up|عقلة/.test(n) && maxRep > 12) {
+          errors.push(`Day ${dayNum}: ${e.name} has ${e.reps} (max ${maxRep} reps), exceeds pullup limit of 12`)
+        }
+        if (/row/.test(n) && !/dumbbell|دمبل/.test(n) && maxRep > 15) {
+          errors.push(`Day ${dayNum}: ${e.name} has ${e.reps} (max ${maxRep} reps), exceeds rows limit of 15`)
+        }
+      }
+
+      if (minRest !== null && minRest < 60) {
+        errors.push(`Day ${dayNum}: ${e.name} rest is ${e.rest} (min ${minRest}s), below minimum 60s for compound`)
+      }
+      if (/deadlift|رف ميت/.test(n) && minRest !== null && minRest < 120) {
+        errors.push(`Day ${dayNum}: ${e.name} rest is ${e.rest} (min ${minRest}s), below minimum 120s for deadlift`)
+      }
+    })
+  })
+
+  // 11. Unknown exercise ratio — hard fail if > 50% unrecognized
   const allReal = []
   days.forEach(d => {
     ;(d.exercises || []).forEach(e => {

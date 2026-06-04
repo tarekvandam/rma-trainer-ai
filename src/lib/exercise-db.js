@@ -15,6 +15,17 @@ const exercisePoolsAR = {
     { name: 'رفع سمانة (Calf Raises)', cat: 'legs', type: 'isolation', defSets: 4, defReps: '15-20', defRest: '30 ث' },
     { name: 'ضغط بايك (Pike Push-ups)', cat: 'push', type: 'compound', defSets: 3, defReps: '10-15', defRest: '60 ث' },
     { name: 'رفع حوض برجل واحدة (Single Leg Glute Bridge)', cat: 'legs', type: 'isolation', defSets: 3, defReps: '12-15 لكل رجل', defRest: '45 ث' },
+    { name: 'ظل ملاكمة (Shadow Boxing)', cat: 'push', type: 'compound', defSets: 3, defReps: '3 د', defRest: '60 ث' },
+    { name: 'تمارين تمساح (Sprawls)', cat: 'legs', type: 'compound', defSets: 3, defReps: '10-15', defRest: '60 ث' },
+    { name: 'زحف دب (Bear Crawls)', cat: 'core', type: 'compound', defSets: 3, defReps: '30 ث', defRest: '45 ث' },
+    { name: 'تعليق (Dead Hangs)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '20-45 ث', defRest: '60 ث' },
+    { name: 'مشي فلاح (Farmer Carry)', cat: 'core', type: 'isolation', defSets: 3, defReps: '30-60 ث', defRest: '60 ث' },
+    { name: 'جسر رقبة (Neck Bridges)', cat: 'core', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
+    { name: 'قرصة طبق (Plate Pinches)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '20-45 ث', defRest: '45 ث' },
+    { name: 'حشرات ميتة (Dead Bugs)', cat: 'core', type: 'isolation', defSets: 3, defReps: '10-15 لكل جانب', defRest: '30 ث' },
+    { name: 'ثني معصم (Wrist Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+    { name: 'ثني معصم عكسي (Reverse Wrist Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+    { name: 'ضرب كرة طبية (Medicine Ball Slams)', cat: 'push', type: 'compound', defSets: 4, defReps: '10-15', defRest: '60 ث' },
   ],
   dumbbell: [
     { name: 'دمبل بنش برس (Dumbbell Bench Press)', cat: 'push', type: 'compound', defSets: 4, defReps: '10-12', defRest: '60 ث' },
@@ -29,6 +40,9 @@ const exercisePoolsAR = {
     { name: 'دمبل رفع جانبي (Dumbbell Lateral Raise)', cat: 'push', type: 'isolation', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     { name: 'دمبل رفع خلفي (Dumbbell Rear Delt Fly)', cat: 'pull', type: 'isolation', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     { name: 'دمبل رفع سمانة (Calf Raises)', cat: 'legs', type: 'isolation', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+    { name: 'دمبل ثني معصم (Dumbbell Wrist Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+    { name: 'دمبل مشي فلاح (Dumbbell Farmer Carry)', cat: 'core', type: 'isolation', defSets: 3, defReps: '30-60 ث', defRest: '60 ث' },
+    { name: 'دمبل ثني معصم عكسي (Dumbbell Reverse Wrist Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
   ],
   barbell: [
     { name: 'بار بنش برس (Bench Press)', cat: 'push', type: 'compound', defSets: 5, defReps: '8-10', defRest: '90 ث' },
@@ -147,6 +161,17 @@ const exercisePoolsEN = {
     { name: 'Calf Raises', cat: 'legs', type: 'isolation', defSets: 4, defReps: '15-20', defRest: '30 ث' },
     { name: 'Pike Push-ups', cat: 'push', type: 'compound', defSets: 3, defReps: '10-15', defRest: '60 ث' },
     { name: 'Single Leg Glute Bridge', cat: 'legs', type: 'isolation', defSets: 3, defReps: '12-15 each leg', defRest: '45 ث' },
+    { name: 'Shadow Boxing', cat: 'push', type: 'compound', defSets: 3, defReps: '3 min', defRest: '60 ث' },
+    { name: 'Sprawls', cat: 'legs', type: 'compound', defSets: 3, defReps: '10-15', defRest: '60 ث' },
+    { name: 'Bear Crawls', cat: 'core', type: 'compound', defSets: 3, defReps: '30 sec', defRest: '45 ث' },
+    { name: 'Dead Hangs', cat: 'pull', type: 'isolation', defSets: 3, defReps: '20-45 sec', defRest: '60 ث' },
+    { name: 'Farmer Carry', cat: 'core', type: 'isolation', defSets: 3, defReps: '30-60 sec', defRest: '60 ث' },
+    { name: 'Neck Bridges', cat: 'core', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
+    { name: 'Plate Pinches', cat: 'pull', type: 'isolation', defSets: 3, defReps: '20-45 sec', defRest: '45 ث' },
+    { name: 'Dead Bugs', cat: 'core', type: 'isolation', defSets: 3, defReps: '10-15 each side', defRest: '30 ث' },
+    { name: 'Wrist Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+    { name: 'Reverse Wrist Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+    { name: 'Medicine Ball Slams', cat: 'push', type: 'compound', defSets: 4, defReps: '10-15', defRest: '60 ث' },
   ],
   dumbbell: [
     { name: 'Dumbbell Bench Press', cat: 'push', type: 'compound', defSets: 4, defReps: '10-12', defRest: '60 ث' },
@@ -161,6 +186,9 @@ const exercisePoolsEN = {
     { name: 'Dumbbell Lateral Raise', cat: 'push', type: 'isolation', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     { name: 'Dumbbell Rear Delt Fly', cat: 'pull', type: 'isolation', defSets: 4, defReps: '12-15', defRest: '45 ث' },
     { name: 'Calf Raises', cat: 'legs', type: 'isolation', defSets: 4, defReps: '15-20', defRest: '30 ث' },
+    { name: 'Dumbbell Wrist Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
+    { name: 'Dumbbell Farmer Carry', cat: 'core', type: 'isolation', defSets: 3, defReps: '30-60 sec', defRest: '60 ث' },
+    { name: 'Dumbbell Reverse Wrist Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
   ],
   barbell: [
     { name: 'Bench Press', cat: 'push', type: 'compound', defSets: 5, defReps: '8-10', defRest: '90 ث' },
@@ -268,7 +296,12 @@ export function getMovement(ex) {
   const cat = ex.cat
   const type = ex.type || 'compound'
 
-  if (cat === 'core') return 'ABS'
+  if (cat === 'core') {
+    if (/bear crawl|زحف دب/.test(n)) return 'CONDITIONING'
+    if (/farmer carry|مشي فلاح/.test(n)) return 'GRIP'
+    if (/neck bridge|جسر رقبة/.test(n)) return 'NECK'
+    return 'ABS'
+  }
 
   if (cat === 'push') {
     if (type === 'isolation') {
@@ -314,8 +347,16 @@ export function getMovement(ex) {
     if (/squat|leg press|قرفصاء|سكوات|ليج بريس/.test(n)) return 'SQUAT_PATTERN'
     if (/deadlift|rdl|romanian|glute bridge|swing|رف ميت|رومانيان|سوينغ|رفع الحوض/.test(n)) return 'HIP_HINGE'
     if (/lunge|step.?up|box jump|اندفاع|صعود|نط/.test(n)) return 'QUAD_ISOLATION'
+    if (/sprawl|تمساح/.test(n)) return 'CONDITIONING'
     return 'SQUAT_PATTERN'
   }
+
+  if (/wrist curl|ثني معصم/.test(n)) return 'FOREARMS'
+  if (/farmer carry|dead hang|plate pinch|مشي فلاح|تعليق|قرصة طبق/i.test(n)) return 'GRIP'
+  if (/shadow box|ظل ملاكمة|medicine ball slam|ضرب كرة/.test(n)) return 'CONDITIONING'
+  if (/rotation|روتيشن|band rotation/.test(n)) return 'ROTATION'
+  if (/neck bridge|جسر رقبة/.test(n)) return 'NECK'
+  if (/bear crawl|زحف دب/.test(n)) return 'CONDITIONING'
 
   return 'ABS'
 }
@@ -342,6 +383,11 @@ export function enrichExercise(ex) {
     'HAMSTRING': { primary: ['Hamstrings'], secondary: ['Glutes'], pattern: 'Leg Curl' },
     'CALVES': { primary: ['Calves'], secondary: [], pattern: 'Calf Raise' },
     'ABS': { primary: ['Abs'], secondary: [], pattern: 'Core Flexion' },
+    'FOREARMS': { primary: ['Forearms'], secondary: [], pattern: 'Forearm Curl' },
+    'GRIP': { primary: ['Forearms', 'Grip'], secondary: [], pattern: 'Grip Strength' },
+    'CONDITIONING': { primary: ['Full Body'], secondary: ['Conditioning'], pattern: 'Explosive Conditioning' },
+    'ROTATION': { primary: ['Core'], secondary: ['Obliques'], pattern: 'Core Rotation' },
+    'NECK': { primary: ['Neck'], secondary: [], pattern: 'Neck Strengthening' },
   }
 
   // Specific exercise overrides
@@ -420,7 +466,17 @@ export function filterByInjuries(pool, injuries) {
   })
 }
 
-// Tag all exercises in a pool with movement pattern + muscle data
+// Determine exercise tier: S (core compounds), A (good alternatives), B (isolation & misc)
+export function getExerciseTier(ex) {
+  const n = ex.name.toLowerCase()
+  if (ex.type === 'compound') {
+    if (/bench press|back squat|deadlift|barbell row|overhead press|pull.?up|chin.?up/i.test(n)) return 'S'
+    if (/leg press|lunge|chest press|dumbbell bench|dumbbell row|cable row|seated row|step.?up|box jump|thruster|سكوات|قرفصاء/.test(n)) return 'A'
+  }
+  return 'B'
+}
+
+// Tag all exercises in a pool with movement pattern + muscle data + tier
 export function tagExercises(pool) {
   pool.forEach(ex => {
     ex.mov = getMovement(ex)
@@ -428,6 +484,7 @@ export function tagExercises(pool) {
     ex.primaryMuscles = enriched.primaryMuscles
     ex.secondaryMuscles = enriched.secondaryMuscles
     ex.movementPattern = enriched.movementPattern
+    ex.tier = getExerciseTier(ex)
   })
 }
 

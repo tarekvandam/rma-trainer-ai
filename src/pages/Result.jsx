@@ -9,6 +9,29 @@ export default function Result() {
   const { form, result } = location.state || {}
   console.log("RESULT OBJECT:", result)
   console.log("DEBUG OBJECT:", result?._debug)
+  console.log(
+    'PLAN_RENDERED',
+    JSON.stringify({
+      days: result.days?.map(d => ({
+        day: d.day,
+        focus: d.focus,
+        exercises: d.exercises.map(e => ({
+          name: e.name,
+          sets: e.sets,
+          reps: e.reps,
+          rest: e.rest,
+          source: e.repSource || 'unknown',
+        }))
+      })),
+      dailyCalories: result.dailyCalories,
+      protein: result.protein,
+      bmr: result.bmr,
+      split: result.split,
+      trainingType: result.trainingType
+    }, null, 2)
+  );
+
+  const debugVersion = result?.debugVersion
 
   if (!result) {
     return (
@@ -26,6 +49,11 @@ export default function Result() {
         <pre className="overflow-x-auto rounded-lg border border-rmared-500/30 bg-black/50 p-3 text-xs text-green-400">
 {JSON.stringify(result._debug, null, 2)}
         </pre>
+      )}
+      {debugVersion && (
+        <div className="rounded-lg border border-yellow-600 bg-yellow-900/40 p-3 text-center text-sm font-bold text-yellow-300">
+          DEBUG VERSION: {debugVersion}
+        </div>
       )}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="cursor-pointer rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-zinc-200">{t('res_back')}</button>
@@ -55,6 +83,7 @@ export default function Result() {
         </div>
       )}
 
+      {console.log('FULL_PLAN_FROM_UI', result.days)}
       {result.days && result.days.map((day, di) => (
         <div key={di} className="card-glow rounded-xl border border-rmared-900/40 bg-zinc-900/50 p-4 md:p-6">
           <div className="mb-2 flex items-center gap-2">
@@ -65,6 +94,7 @@ export default function Result() {
           <div className="divide-y divide-zinc-800">
             {day.exercises.map((ex, ei) => (
               <div key={ei} className={`flex items-center justify-between py-3 text-sm ${ex.durationMinutes ? 'rounded-lg bg-red-950/20 px-3' : ''}`}>
+                {console.log('UI_EXERCISE', ex.name, ex.sets, ex.reps, ex.rest)}
                 <span className={`font-medium ${ex.durationMinutes ? 'text-red-400' : 'text-zinc-200'}`}>
                   {ex.durationMinutes ? '🔥 ' : ''}{ex.name}
                 </span>
