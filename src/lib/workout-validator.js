@@ -1,5 +1,7 @@
 import { parseMaxRep, parseMinRest } from './exercise-selector.js'
 
+const ISOLATION_MOVEMENTS = ['CHEST_ISOLATION', 'LATERAL_RAISE', 'TRICEPS', 'BICEPS', 'REAR_DELT', 'QUAD_ISOLATION', 'HAMSTRING', 'GLUTE_ISOLATION', 'FOREARMS', 'ABS', 'CALVES', 'Chest Isolation', 'Lateral Raise', 'Triceps Extension', 'Bicep Curl', 'Rear Delt Fly', 'Leg Extension', 'Leg Curl', 'Calf Raise', 'Core Flexion', 'Core Stabilization', 'Core Rotation', 'Back Extension']
+
 function detectDayType(focus) {
   const f = (focus || '').toLowerCase()
   const pushKw = ['push', 'chest', 'shoulder', 'triceps', 'upper', 'دفع', 'صدر', 'كتف', 'تراي', 'أعلى']
@@ -141,6 +143,9 @@ export function validateWorkout(planOrDays, level) {
       const n = e.name.toLowerCase()
       const type = e.type || 'compound'
       if (type !== 'compound') return
+      // Skip exercises with isolation movement patterns (e.g. Dumbbell Lunges is QUAD_ISOLATION)
+      const mov = e.movementPattern || e.mov || ''
+      if (ISOLATION_MOVEMENTS.includes(mov)) return
 
       const maxRep = parseMaxRep(e.reps)
       const minRest = parseMinRest(e.rest)

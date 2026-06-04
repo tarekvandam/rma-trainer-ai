@@ -829,8 +829,8 @@ function checkArmsDay(days) {
       if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
       const mov = e.movementPattern || e.mov || ''
       const n = e.name.toLowerCase()
-      if (mov === 'BICEPS' || /bicep.*curl/i.test(n)) bicepsCount++
-      if (mov === 'TRICEPS' || /triceps/i.test(n)) tricepsCount++
+      if (mov === 'BICEPS' || /curl/i.test(n) || mov === 'Bicep Curl') bicepsCount++
+      if (mov === 'TRICEPS' || /triceps/i.test(n) || /skull crusher|pushdown|extension/i.test(n) || mov === 'Triceps Extension') tricepsCount++
       if (mov === 'LATERAL_RAISE' || /lateral raise|جانبي/i.test(n)) lateralRaiseCount++
       if (mov === 'REAR_DELT' || /rear delt/i.test(n)) rearDeltCount++
       if (mov === 'LATERAL_RAISE' || mov === 'REAR_DELT') {

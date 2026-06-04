@@ -409,6 +409,70 @@ const nutriMapEN = {
   general: (bmr, protein, w) => `${Math.round(bmr * 1.4)} cal/day. Protein ${protein}g. Balance 40% carbs - 30% protein - 30% fat. Water ${Math.round(w * 0.04)}L.`,
 }
 
+/**
+ * Hard fail validation before QC.
+ * Returns { passed: boolean, reasons: string[] }
+ * If not passed, the retry loop regenerates the plan.
+ */
+function hardFailValidate(dayData, level, protein, weight, splitConfig) {
+  const reasons = []
+  const splitName = (splitConfig.name || '').toLowerCase()
+  const dayFocuses = (splitConfig.dayFocuses || []).map(f => (f || '').toLowerCase())
+
+  // 1. Beginner split check: no Push, Pull, Legs, Arms
+  if (level === 'beginner') {
+    const hasForbidden = dayFocuses.some(f => /\b(push|pull|legs|arms|أذرع|دفع|سحب|أرجل)\b/.test(f))
+    if (hasForbidden) {
+      reasons.push('beginner splits: cannot contain Push/Pull/Legs/Arms')
+    }
+  }
+
+  // 2. Sets range check
+  const hasRangeSets = dayData.some(d => d.exercises.some(e =>
+    !e.name.includes('Cardio') && !e.name.includes('كارديو') &&
+    e.sets && typeof e.sets === 'string' && e.sets.includes('-')
+  ))
+  if (hasRangeSets) {
+    reasons.push('sets unresolved: exercise.sets contains "-"')
+  }
+
+  // 3. Arms Day: biceps < 2 or triceps < 2
+  dayData.forEach(d => {
+    if (!/arms|arm|أذرع|ذراع/i.test(d.focus || '')) return
+    let biceps = 0, triceps = 0
+    d.exercises.forEach(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+      const mov = e.movementPattern || e.mov || ''
+      if (mov === 'BICEPS' || /curl/i.test(e.name) || mov === 'Bicep Curl') biceps++
+      if (mov === 'TRICEPS' || /triceps/i.test(e.name) || /skull crusher|pushdown|extension/i.test(e.name) || mov === 'Triceps Extension') triceps++
+    })
+    if (biceps < 2) reasons.push(`arms day: only ${biceps} biceps (need ≥2)`)
+    if (triceps < 2) reasons.push(`arms day: only ${triceps} triceps (need ≥2)`)
+  })
+
+  // 4. Duplicate shoulder isolation (any day)
+  dayData.forEach(d => {
+    const seen = new Map()
+    d.exercises.forEach(e => {
+      if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+      const mov = e.movementPattern || e.mov || ''
+      if (mov === 'LATERAL_RAISE' || mov === 'REAR_DELT') {
+        if (seen.has(mov)) {
+          reasons.push(`duplicate shoulder isolation: ${mov} appears twice in "${d.focus || d.day}"`)
+        }
+        seen.set(mov, (seen.get(mov) || 0) + 1)
+      }
+    })
+  })
+
+  // 5. Protein check
+  if (protein > 0 && weight > 0 && protein > Math.round(weight * 2.2)) {
+    reasons.push(`protein ${protein}g exceeds 2.2 g/kg (max ${Math.round(weight * 2.2)}g)`)
+  }
+
+  return { passed: reasons.length === 0, reasons }
+}
+
 export function generateGymPlan(form) {
   const lang = form.lang || 'ar'
   const w = parseFloat(form.weight) || 70
@@ -526,11 +590,11 @@ export function generateGymPlan(form) {
       }
     }
 
-    // Clean Arms day FIRST: replace any SHOULDER_COMPOUND in REAR_DELT/LATERAL_RAISE positions
-    dayData.forEach(dd => {
-      if (!/arms|arm|أذرع|ذراع/i.test(dd.focus)) return
-      const existingNames = new Set(dd.exercises.map(e => e.name))
-      const armsRearLateralSlots = [2, 3] // indices 2=REAR_DELT, 3=LATERAL_RAISE in new arms template
+      // Clean Arms day FIRST: replace any non-isolation in REAR_DELT/LATERAL_RAISE positions
+      dayData.forEach(dd => {
+        if (!/arms|arm|أذرع|ذراع/i.test(dd.focus)) return
+        const existingNames = new Set(dd.exercises.map(e => e.name))
+        const armsRearLateralSlots = [4, 5] // indices 4=REAR_DELT, 5=LATERAL_RAISE in arms template
       armsRearLateralSlots.forEach(slotIdx => {
         if (slotIdx >= dd.exercises.length) return
         const ex = dd.exercises[slotIdx]
@@ -714,6 +778,14 @@ export function generateGymPlan(form) {
     } else {
       report = { allPassed: true }
     }
+    // Hard fail validation — print VALIDATION_FAIL_REASON and regenerate if any fail
+    const hfResult = hardFailValidate(dayData, level, protein, w, splitConfig)
+    if (!hfResult.passed) {
+      hfResult.reasons.forEach(r => console.log('VALIDATION_FAIL_REASON', r))
+      report = { allPassed: false }
+      continue
+    }
+
     // Resolve set ranges before QC check (second pass for safety)
     dayData.forEach(dd => {
       dd.exercises.forEach(e => {
@@ -798,14 +870,31 @@ export function generateGymPlan(form) {
       coachScore: qcResult ? qcResult.coachScore : { total: 60 },
       _qc: qcResult,
     }
-    const qc = qcResult || {}
-    const cs = qc.coachScore || {}
-    console.log('COACH_SCORE', cs.total || 0)
-    console.log('SPLIT_SCORE', qc.splitScore || 0)
-    console.log('PROTEIN_SCORE', qc.proteinScore || (qc.proteinScore === 0 ? 0 : 10))
-    console.log('ARMS_SCORE', qc.armsScore || 0)
-    const finalPass = (!qc.verdict || qc.verdict === 'PASS') && (!qc.coachVerdict || qc.coachVerdict === 'PASS')
-    console.log('FINAL_PASS', finalPass ? 'true' : 'false')
+    // Final validation report — run hard fail checks one last time
+    const finalHF = hardFailValidate(dayData, level, protein, w, splitConfig)
+    const dayFocusNames = splitConfig.dayFocuses.map(f => (f || '').toLowerCase())
+    const splitHasForbidden = /\b(push|pull|legs|arms)\b/.test(dayFocusNames.join(' '))
+    const hasRangeSetsFinal = dayData.some(d => d.exercises.some(e =>
+      !e.name.includes('Cardio') && !e.name.includes('كارديو') &&
+      e.sets && typeof e.sets === 'string' && e.sets.includes('-')
+    ))
+    const armsValid = !finalHF.reasons.some(r => r.startsWith('arms day'))
+    const duplicateShoulder = finalHF.reasons.some(r => r.startsWith('duplicate shoulder'))
+    const proteinValid = !(protein > 0 && w > 0 && protein > Math.round(w * 2.2))
+    const beginnerValid = level !== 'beginner' || !splitHasForbidden
+    const finalPass = finalHF.passed && (!qcResult || qcResult.verdict === 'PASS')
+    const validationReport = {
+      splitValid: level !== 'beginner' || !splitHasForbidden,
+      setsResolved: !hasRangeSetsFinal,
+      armsValid,
+      proteinValid,
+      beginnerValid,
+      finalPass,
+    }
+    console.log('FINAL_VALIDATION_REPORT', JSON.stringify(validationReport))
+    if (!finalPass) {
+      console.error('CRITICAL: plan reached UI with validation failures')
+    }
     return result
 }
 
