@@ -768,6 +768,73 @@ export function generateGymPlan(form) {
       }
     }
 
+    // Resolve ALL set ranges to integers before any validation
+    dayData.forEach(dd => {
+      dd.exercises.forEach(e => {
+        if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+        const raw = e.sets
+        if (!raw || typeof raw !== 'string') { e.sets = '3'; return }
+        if (/^\d+$/.test(raw)) return
+        if (raw.includes('-')) {
+          const parts = raw.split('-').map(s => parseInt(s.trim()))
+          if (parts.length >= 1 && !isNaN(parts[0])) {
+            const lo = parts[0], hi = parts.length >= 2 && !isNaN(parts[1]) ? parts[1] : lo
+            e.sets = String(Math.round((lo + hi) / 2))
+          } else { e.sets = '3' }
+        } else { e.sets = '3' }
+      })
+    })
+
+    // Arms Day fixer: ensure 2+ biceps and 2+ triceps by injecting from pool
+    dayData.forEach(dd => {
+      if (!/arms|arm|أذرع|ذراع/i.test(dd.focus)) return
+      let biceps = 0, triceps = 0
+      dd.exercises.forEach(e => {
+        if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+        const n = e.name.toLowerCase()
+        if (/curl/i.test(n)) biceps++
+        if (/triceps|skull crusher|pushdown|extension/i.test(n)) triceps++
+      })
+      const usedInDay = new Set(dd.exercises.map(e => e.name))
+      const usedGlobal = new Set(globalUsedNames)
+      // Inject missing biceps
+      while (biceps < 2) {
+        const poolEx = pool.find(ex => !usedInDay.has(ex.name) && ex.mov === 'BICEPS')
+        if (!poolEx) break
+        const adj = adjust(poolEx, goal, level); adj.mov = poolEx.mov
+        dd.exercises.splice(0, 0, adj)
+        globalUsedNames.add(poolEx.name); usedInDay.add(poolEx.name); usedGlobal.add(poolEx.name)
+        biceps++
+        console.log('ARMS_FIXER: injected biceps', poolEx.name)
+      }
+      // Inject missing triceps
+      while (triceps < 2) {
+        const poolEx = pool.find(ex => !usedInDay.has(ex.name) && ex.mov === 'TRICEPS')
+        if (!poolEx) {
+          const alt = pool.find(ex => !usedInDay.has(ex.name) && (ex.type === 'isolation') && /triceps|skull crusher|pushdown|extension|dip/i.test(ex.name))
+          if (!alt) break
+          const adj = adjust(alt, goal, level); adj.mov = 'TRICEPS'
+          dd.exercises.splice(1, 0, adj)
+          globalUsedNames.add(alt.name); usedInDay.add(alt.name)
+          triceps++
+          console.log('ARMS_FIXER: injected triceps (alt)', alt.name)
+          continue
+        }
+        const adj = adjust(poolEx, goal, level); adj.mov = poolEx.mov
+        dd.exercises.splice(1, 0, adj)
+        globalUsedNames.add(poolEx.name); usedInDay.add(poolEx.name); usedGlobal.add(poolEx.name)
+        triceps++
+        console.log('ARMS_FIXER: injected triceps', poolEx.name)
+      }
+      // Deduplicate within arms day
+      const seen = new Set()
+      dd.exercises = dd.exercises.filter(e => {
+        if (e.name.includes('Cardio') || e.name.includes('كارديو')) return true
+        if (seen.has(e.name)) { console.log('ARMS_FIXER: removed duplicate', e.name); return false }
+        seen.add(e.name); return true
+      })
+    })
+
     // Regenerate day titles from actual exercises (preserving focus)
     dayData.forEach((dd, i) => {
       const title = generateDayTitle(dd, lang, splitConfig.dayFocuses[i] || null)
@@ -793,29 +860,11 @@ export function generateGymPlan(form) {
       continue
     }
 
-    // Resolve ALL set ranges before QC check — only integers allowed
-    dayData.forEach(dd => {
-      dd.exercises.forEach(e => {
-        if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
-        const raw = e.sets
-        if (!raw || typeof raw !== 'string') { e.sets = '3'; return }
-        if (/^\d+$/.test(raw)) return
-        if (raw.includes('-')) {
-          const parts = raw.split('-').map(s => parseInt(s.trim()))
-          if (parts.length >= 1 && !isNaN(parts[0])) {
-            const lo = parts[0], hi = parts.length >= 2 && !isNaN(parts[1]) ? parts[1] : lo
-            e.sets = String(Math.round((lo + hi) / 2))
-          } else { e.sets = '3' }
-        } else {
-          e.sets = '3'
-        }
-      })
-    })
     // Run Quality Control engine for all plan types
     qcResult = calculateWorkoutScore({ days: dayData, equipmentList: equipList, level: level, goal: goal, trainingType: trainingType, _weight: w, _bmr: bmr, _dailyCalories: dailyCalories, _protein: protein })
   } while ((!report.allPassed || (qcResult && qcResult.verdict !== 'PASS') || (qcResult && qcResult.coachVerdict !== 'PASS')) && attempts < MAX_ATTEMPTS)
 
-    // Strip metadata and resolve set ranges before returning to user
+    // Strip metadata before returning to user
     dayData.forEach(dd => {
       dd.exercises.forEach(e => {
         delete e.cat
@@ -824,17 +873,6 @@ export function generateGymPlan(form) {
         delete e.primaryMuscles
         delete e.secondaryMuscles
         delete e.movementPattern
-        // Resolve set ranges to single integers
-        const raw = e.sets
-        if (raw && typeof raw === 'string' && !/^\d+$/.test(raw)) {
-          if (raw.includes('-')) {
-            const parts = raw.split('-').map(s => parseInt(s.trim()))
-            if (parts.length >= 1 && !isNaN(parts[0])) {
-              const lo = parts[0], hi = parts.length >= 2 && !isNaN(parts[1]) ? parts[1] : lo
-              e.sets = String(Math.round((lo + hi) / 2))
-            } else { e.sets = '3' }
-          } else { e.sets = '3' }
-        }
       })
     })
 
@@ -860,10 +898,10 @@ export function generateGymPlan(form) {
         'الاستمرارية أهم من الشدة — تمرين ضعيف أحسن من عدمه',
       ]
 
-   if (qcResult && qcResult.verdict === 'FAIL') {
-     console.error('QC ENGINE: Plan FAILED (score < 80) after max attempts.')
-     console.error('INVALID PLAN RETURNED', qcResult.total, report ? report.errors : [])
-     // Generate emergency plan as last resort - use cardoOptionsEN/AR directly
+   // Determine if the loop exited because retries exhausted without a valid plan
+   const loopExhausted = !report.allPassed || !qcResult || qcResult.verdict === 'FAIL' || qcResult.coachVerdict !== 'PASS'
+   if (loopExhausted) {
+     console.error('RETRY EXHAUSTED: no valid plan after', MAX_ATTEMPTS, 'attempts')
      const cardioOptsFallback = { ...(lang === 'en' ? cardioOptionsEN : cardioOptionsAR), general: generalCardioOptions(lang, goal) }
      return generateEmergencyPlan(form, lang, w, h, a, days, goal, level, equipList, trainingType, bmr, protein, nutriMap, nutriMapEN, cardioOptsFallback, dayNames)
    }
@@ -911,7 +949,9 @@ export function generateGymPlan(form) {
     }
     console.log('FINAL_VALIDATION_REPORT', JSON.stringify(validationReport))
     if (!finalPass) {
-      console.error('CRITICAL: plan reached UI with validation failures')
+      console.error('CRITICAL: plan would reach UI with validation failures — forcing emergency')
+      const cardioOptsFallback = { ...(lang === 'en' ? cardioOptionsEN : cardioOptionsAR), general: generalCardioOptions(lang, goal) }
+      return generateEmergencyPlan(form, lang, w, h, a, days, goal, level, equipList, trainingType, bmr, protein, nutriMap, nutriMapEN, cardioOptsFallback, dayNames)
     }
     return result
 }
