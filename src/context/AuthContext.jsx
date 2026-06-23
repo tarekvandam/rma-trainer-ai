@@ -11,7 +11,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (supabase) {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        setUser(session?.user ?? null)
+        if (session) setUser(session.user)
+        else {
+          const local = getLocalSession()
+          if (local) setUser({ email: local.email })
+        }
         setLoading(false)
       })
 
