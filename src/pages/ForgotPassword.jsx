@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { generateResetCode, verifyResetCode, changePassword, getLocalUsers, localSignUp } from '../lib/auth'
 import { useLang } from '../lib/lang'
 
 export default function ForgotPassword() {
+  useEffect(() => {
+    const users = getLocalUsers()
+    if (!users['eng.tarek.sayed@gmail.com']) localSignUp('eng.tarek.sayed@gmail.com', 'admin123')
+  }, [])
   const { t } = useLang()
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
@@ -20,7 +24,12 @@ export default function ForgotPassword() {
     e.preventDefault()
     setMsg(''); setSuccess(false); setShowCode('')
     let users = getLocalUsers()
-    if (!users[email]) { localSignUp(email, 'temporary123'); users = getLocalUsers() }
+    if (!users[email]) {
+      const result = localSignUp(email, 'temporary123')
+      if (result.error) { setMsg(result.error.message); return }
+    }
+    users = getLocalUsers()
+    if (!users[email]) { setMsg('فشل إنشاء الحساب'); return }
     const code = generateResetCode(email)
     if (!code) { setMsg(t('fp_error')); return }
     setShowCode(code)
