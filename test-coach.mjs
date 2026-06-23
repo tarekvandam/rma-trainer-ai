@@ -149,21 +149,58 @@ runScenario('Progression System check', () => rProg, (r) => {
   assert(r.progressiveOverload.week4, 'Plan has week 4 progression')
 })
 
-// ===== SCENARIO 12: Arms Day =====
-runScenario('Arms Day check (6-day PPL+Upper/Lower+Arms)', () => generateGymPlan(config(6, 'advanced', 'general', 'gym', fullGym)), (r) => {
+// ===== SCENARIO 12: Arms Day (Advanced) =====
+runScenario('Arms Day check (6-day PPL+Upper/Lower+Arms, advanced)', () => generateGymPlan(config(6, 'advanced', 'general', 'gym', fullGym)), (r) => {
   checkDays(6)(r)
   assert(r._qc && r._qc.total >= 90, `QC Score >= 90 (got ${r._qc?.total})`)
   if (r._qc?.coachScore) console.log(`  Coach Score: ${r._qc.coachScore.total}/100`)
   const armsDay = r.days.find(d => /arms|arm/i.test(d.focus))
-  if (armsDay) {
-    const names = armsDay.exercises.map(e => e.name)
-    console.log(`  Arms Day exercises:`, names.slice(0, -1).join(', '))
-    const hasShoulderPressMachine = names.some(n => /shoulder press machine/i.test(n))
-    assert(!hasShoulderPressMachine, 'Arms Day has no Shoulder Press Machine')
-    // Check no duplicates within arms day
-    assert(new Set(names).size === names.length, 'Arms Day has no duplicate exercises')
-  }
+  assert(armsDay, 'Has Arms Day')
+  checkArmsDayRules(armsDay)
 })
+
+// ===== SCENARIO 17: Arms Day (Intermediate) =====
+runScenario('Arms Day check (6-day PPL+Upper/Lower+Arms, intermediate)', () => generateGymPlan(config(6, 'intermediate', 'general', 'gym', fullGym)), (r) => {
+  checkDays(6)(r)
+  assert(r._qc && r._qc.total >= 90, `QC Score >= 90 (got ${r._qc?.total})`)
+  const armsDay = r.days.find(d => /arms|arm/i.test(d.focus))
+  assert(armsDay, 'Has Arms Day')
+  checkArmsDayRules(armsDay)
+})
+
+function checkArmsDayRules(armsDay) {
+  const names = armsDay.exercises.map(e => e.name)
+  console.log(`  Arms Day exercises:`, names.slice(0, -1).join(', '))
+  // No shoulder press machine on arms day
+  assert(!names.some(n => /shoulder press machine/i.test(n)), 'Arms Day has no Shoulder Press Machine')
+  // No duplicates overall
+  assert(new Set(names).size === names.length, 'Arms Day has no duplicate exercises')
+
+  // Count true biceps (exclude wrist curls/reverse wrist curls/grip)
+  let biceps = 0, triceps = 0, lateralRaise = 0, rearDelt = 0
+  const shoulderIsolationNames = []
+  armsDay.exercises.forEach(e => {
+    if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
+    const n = e.name.toLowerCase()
+    const mov = e.movementPattern || e.mov || ''
+    // True biceps: mov === BICEPS, not wrist-related
+    if ((mov === 'BICEPS' || mov === 'Bicep Curl' || (/curl/i.test(n) && !/wrist/i.test(n))) && !/wrist|grip/i.test(n)) biceps++
+    // True triceps
+    if (mov === 'TRICEPS' || mov === 'Triceps Extension' || /triceps|skull crusher|pushdown|extension/i.test(n)) triceps++
+    // Lateral raise
+    if (mov === 'LATERAL_RAISE' || /lateral raise|جانبي/i.test(n)) lateralRaise++
+    // Rear delt
+    if (mov === 'REAR_DELT' || /rear delt/i.test(n)) rearDelt++
+    // Track shoulder isolations for duplicate check
+    if (mov === 'LATERAL_RAISE' || mov === 'REAR_DELT') shoulderIsolationNames.push(e.name)
+  })
+  assert(biceps >= 2, `Arms Day has >=2 true biceps exercises (got ${biceps})`)
+  assert(triceps >= 2, `Arms Day has >=2 true triceps exercises (got ${triceps})`)
+  assert(lateralRaise <= 1, `Arms Day has ≤1 lateral raise (got ${lateralRaise})`)
+  assert(rearDelt <= 1, `Arms Day has ≤1 rear delt (got ${rearDelt})`)
+  // No duplicate shoulder isolation
+  assert(new Set(shoulderIsolationNames).size === shoulderIsolationNames.length, 'Arms Day has no duplicate shoulder isolation exercises')
+}
 
 // ===== SCENARIO 13: Strength Plan =====
 const rStrength = generateGymPlan(config(4, 'advanced', 'strength', 'gym', fullGym))

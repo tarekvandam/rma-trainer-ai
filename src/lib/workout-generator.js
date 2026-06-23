@@ -179,10 +179,22 @@ export function SplitSelector(form) {
  */
 function sortByPriority(candidates) {
   return candidates.sort((a, b) => {
-    const order = { compound: 0, isolation: 2 }
-    const aP = order[a.type] ?? 1
-    const bP = order[b.type] ?? 1
-    return aP - bP
+    const getName = (e) => (e.name || '').toLowerCase()
+    const getPrio = (e) => {
+      const n = getName(e)
+      if (e.type !== 'compound') return 99
+      if (/deadlift|رف ميت/.test(n)) return 0
+      if (/(?:^|[^a-z])squat|قرفصاء|سكوات/.test(n) && !/leg press|ليج بريس/.test(n)) return 1
+      if (/bench press|بنش/.test(n)) return 2
+      if (/overhead.?press|shoulder.?press|military.?press|ضغط كتف|ضغط جنب/.test(n)) return 3
+      if (/barbell row|pendlay row|سحب بار|صف بار/.test(n)) return 4
+      if (/pull.?up|lat.?pulldown|عقلة|سحب علوي/.test(n)) return 5
+      if (/leg press|ليج بريس/.test(n)) return 6
+      if (/dip|غطس/.test(n)) return 7
+      if (e.type === 'compound') return 8
+      return 99
+    }
+    return getPrio(a) - getPrio(b)
   })
 }
 
@@ -401,19 +413,19 @@ const dayNamesAR = ['', 'الأول', 'الثاني', 'الثالث', 'الرا�
 const dayNamesEN = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six']
 
 const nutriMapAR = {
-  fat_loss: (bmr, protein, w) => `عجز ${Math.round(bmr * 0.25)} سعرة → ${Math.round(bmr * 1.2 - 500)} سعرة/يوم. بروتين ${protein}ج. كارب 100-150ج. دهون 40ج. خضار غير محدود. موية ${Math.round(w * 0.04)} لتر.`,
-  muscle_gain: (bmr, protein, w) => `فائض ${Math.round(bmr * 0.15)} سعرة → ${Math.round(bmr * 1.55 + 300)} سعرة/يوم. بروتين ${protein}ج. كارب 300ج. دهون 60ج. 5-6 وجبات. موية ${Math.round(w * 0.04)} لتر.`,
-  endurance: (bmr, protein, w) => `${Math.round(bmr * 1.55)} سعرة/يوم. بروتين ${protein}ج. كارب 300-400ج. دهون 50ج. موية 3.5 لتر.`,
-  strength: (bmr, protein, w) => `${Math.round(bmr * 1.55 + 100)} سعرة/يوم. بروتين ${protein}ج. كارب 250-300ج. دهون 50-60ج.`,
-  general: (bmr, protein, w) => `${Math.round(bmr * 1.4)} سعرة/يوم. بروتين ${protein}ج. توازن 40% كارب - 30% بروتين - 30% دهون. موية ${Math.round(w * 0.04)} لتر.`,
+  fat_loss: (bmr, protein, w, cal, fat, carbs) => `عجز ${Math.round(bmr * 0.25)} سعرة → ${cal} سعرة/يوم. بروتين ${protein}ج. كارب ${Math.round(carbs)}ج. دهون ${Math.round(fat)}ج. خضار غير محدود. موية ${Math.round(w * 0.04)} لتر.`,
+  muscle_gain: (bmr, protein, w, cal, fat, carbs) => `فائض ${Math.round(bmr * 0.15)} سعرة → ${cal} سعرة/يوم. بروتين ${protein}ج. كارب ${Math.round(carbs)}ج. دهون ${Math.round(fat)}ج. 5-6 وجبات. موية ${Math.round(w * 0.04)} لتر.`,
+  endurance: (bmr, protein, w, cal, fat, carbs) => `${cal} سعرة/يوم. بروتين ${protein}ج. كارب ${Math.round(carbs)}ج. دهون ${Math.round(fat)}ج. موية 3.5 لتر.`,
+  strength: (bmr, protein, w, cal, fat, carbs) => `${cal} سعرة/يوم. بروتين ${protein}ج. كارب ${Math.round(carbs)}ج. دهون ${Math.round(fat)}ج.`,
+  general: (bmr, protein, w, cal, fat, carbs) => `${cal} سعرة/يوم. بروتين ${protein}ج. كارب ${Math.round(carbs)}ج (40%). دهون ${Math.round(fat)}ج (30%). موية ${Math.round(w * 0.04)} لتر.`,
 }
 
 const nutriMapEN = {
-  fat_loss: (bmr, protein, w) => `Deficit ${Math.round(bmr * 0.25)} cal → ${Math.round(bmr * 1.2 - 500)} cal/day. Protein ${protein}g. Carbs 100-150g. Fat 40g. Unlimited veggies. Water ${Math.round(w * 0.04)}L.`,
-  muscle_gain: (bmr, protein, w) => `Surplus ${Math.round(bmr * 0.15)} cal → ${Math.round(bmr * 1.55 + 300)} cal/day. Protein ${protein}g. Carbs 300g. Fat 60g. 5-6 meals. Water ${Math.round(w * 0.04)}L.`,
-  endurance: (bmr, protein, w) => `${Math.round(bmr * 1.55)} cal/day. Protein ${protein}g. Carbs 300-400g. Fat 50g. Water 3.5L.`,
-  strength: (bmr, protein, w) => `${Math.round(bmr * 1.55 + 100)} cal/day. Protein ${protein}g. Carbs 250-300g. Fat 50-60g.`,
-  general: (bmr, protein, w) => `${Math.round(bmr * 1.4)} cal/day. Protein ${protein}g. Balance 40% carbs - 30% protein - 30% fat. Water ${Math.round(w * 0.04)}L.`,
+  fat_loss: (bmr, protein, w, cal, fat, carbs) => `Deficit ${Math.round(bmr * 0.25)} cal → ${cal} cal/day. Protein ${protein}g. Carbs ${Math.round(carbs)}g. Fat ${Math.round(fat)}g. Unlimited veggies. Water ${Math.round(w * 0.04)}L.`,
+  muscle_gain: (bmr, protein, w, cal, fat, carbs) => `Surplus ${Math.round(bmr * 0.15)} cal → ${cal} cal/day. Protein ${protein}g. Carbs ${Math.round(carbs)}g. Fat ${Math.round(fat)}g. 5-6 meals. Water ${Math.round(w * 0.04)}L.`,
+  endurance: (bmr, protein, w, cal, fat, carbs) => `${cal} cal/day. Protein ${protein}g. Carbs ${Math.round(carbs)}g. Fat ${Math.round(fat)}g. Water 3.5L.`,
+  strength: (bmr, protein, w, cal, fat, carbs) => `${cal} cal/day. Protein ${protein}g. Carbs ${Math.round(carbs)}g. Fat ${Math.round(fat)}g.`,
+  general: (bmr, protein, w, cal, fat, carbs) => `${cal} cal/day. Protein ${protein}g. Carbs ${Math.round(carbs)}g (40%). Fat ${Math.round(fat)}g (30%). Water ${Math.round(w * 0.04)}L.`,
 }
 
 /**
@@ -477,6 +489,41 @@ function hardFailValidate(dayData, level, protein, weight, splitConfig) {
     reasons.push(`protein ${protein}g exceeds 2.2 g/kg (max ${Math.round(weight * 2.2)}g)`)
   }
 
+  // 6. Squat/Deadlift spacing: not on consecutive days
+  for (let i = 0; i < dayData.length; i++) {
+    const today = dayData[i]
+    const todayNames = today.exercises.map(e => (e.name || '').toLowerCase()).join(' ')
+    const hasDeadlift = /deadlift|رف ميت/.test(todayNames)
+    const hasSquat = /(?:^|[^a-z])squat|قرفصاء|سكوات/.test(todayNames) && !/leg press|ليج بريس/.test(todayNames)
+    if (!hasDeadlift && !hasSquat) continue
+    if (i > 0) {
+      const prevNames = dayData[i - 1].exercises.map(e => (e.name || '').toLowerCase()).join(' ')
+      const prevHasDeadlift = /deadlift|رف ميت/.test(prevNames)
+      const prevHasSquat = /(?:^|[^a-z])squat|قرفصاء|سكوات/.test(prevNames) && !/leg press|ليج بريس/.test(prevNames)
+      if (hasDeadlift && (prevHasSquat || prevHasDeadlift)) reasons.push(`Deadlift and Squat/Deadlift on consecutive days (${i-1}→${i})`)
+      if (hasSquat && prevHasDeadlift) reasons.push(`Squat and Deadlift on consecutive days (${i-1}→${i})`)
+    }
+    if (i < dayData.length - 1) {
+      const nextNames = dayData[i + 1].exercises.map(e => (e.name || '').toLowerCase()).join(' ')
+      const nextHasDeadlift = /deadlift|رف ميت/.test(nextNames)
+      const nextHasSquat = /(?:^|[^a-z])squat|قرفصاء|سكوات/.test(nextNames) && !/leg press|ليج بريس/.test(nextNames)
+      if (hasDeadlift && (nextHasSquat || nextHasDeadlift)) reasons.push(`Deadlift and Squat/Deadlift on consecutive days (${i}→${i+1})`)
+      if (hasSquat && nextHasDeadlift) reasons.push(`Squat and Deadlift on consecutive days (${i}→${i+1})`)
+    }
+  }
+
+  // 7. Lower back recovery: no heavy lower back (Deadlift, Barbell Row) on consecutive days
+  for (let i = 0; i < dayData.length; i++) {
+    const todayNames = dayData[i].exercises.map(e => (e.name || '').toLowerCase()).join(' ')
+    const hasHeavyBack = /deadlift|رف ميت/.test(todayNames) || /barbell row|بار الأرض|صف بار/.test(todayNames)
+    if (!hasHeavyBack) continue
+    if (i > 0) {
+      const prevNames = dayData[i - 1].exercises.map(e => (e.name || '').toLowerCase()).join(' ')
+      const prevHasHeavyBack = /deadlift|رف ميت/.test(prevNames) || /barbell row|بار الأرض|صف بار/.test(prevNames)
+      if (hasHeavyBack && prevHasHeavyBack) reasons.push(`heavy lower back on consecutive days (${i-1}→${i})`)
+    }
+  }
+
   return { passed: reasons.length === 0, reasons }
 }
 
@@ -493,9 +540,7 @@ export function generateGymPlan(form) {
   const trainingType = form.trainingType || 'general'
 
   const bmr = Math.round(10 * w + 6.25 * h - 5 * a + 5)
-  const proteinFactor = { fat_loss: 2.0, muscle_gain: 1.8, endurance: 1.6, strength: 2.0, general: 1.6 }[goal] || 1.6
-  const protein = Math.round(Math.min(w * proteinFactor, w * 2.2))
-  console.log('PROTEIN_DEBUG', JSON.stringify({ weight: w, goal, multiplier: proteinFactor, proteinFinal: protein }))
+  const protein = Math.round(w * (goal === 'fat_loss' ? 2.2 : 2.0))
 
   // Get exercise pools
   const pools = getExercisePools(lang)
@@ -522,13 +567,15 @@ export function generateGymPlan(form) {
   let qcResult = null
   let attempts = 0
   const globalUsedNames = new Set()
-  const activityFactor = { fat_loss: 1.2, muscle_gain: 1.55, endurance: 1.55, strength: 1.55, general: 1.4 }[goal] || 1.4
+  const activityFactor = days <= 3 ? 1.55 : days === 4 ? 1.65 : days <= 5 ? 1.725 : 1.9
   const tdee = Math.round(bmr * activityFactor)
   let dailyCalories = tdee
   if (goal === 'fat_loss') dailyCalories = tdee - 500
   else if (goal === 'muscle_gain') dailyCalories = tdee + 300
-  else if (goal === 'strength') dailyCalories = tdee + 100
+  else if (goal === 'strength') dailyCalories = tdee + 200
   if (dailyCalories < bmr) dailyCalories = bmr
+  const fatG = Math.round((dailyCalories * 0.22) / 9)
+  const carbG = Math.round((dailyCalories - protein * 4 - fatG * 9) / 4)
 
   // 2️⃣ Build days using WorkoutBuilder with retry loop
   do {
@@ -723,7 +770,7 @@ export function generateGymPlan(form) {
     // ---- Volume Auto Balance (generalized for all muscle groups) ----
     const VOL_RANGES = {
       Chest: { min: 10, max: 20 }, Back: { min: 12, max: 22 }, Shoulders: { min: 10, max: 20 },
-      Quads: { min: 10, max: 18 }, Hamstrings: { min: 8, max: 16 },
+      Quads: { min: 10, max: 18 }, Hamstrings: { min: 8, max: 16 }, Glutes: { min: 8, max: 16 },
       Biceps: { min: 8, max: 16 }, Triceps: { min: 8, max: 16 },
       Calves: { min: 6, max: 15 }, Abs: { min: 6, max: 15 },
     }
@@ -737,10 +784,24 @@ export function generateGymPlan(form) {
       if (['Front Delts','Side Delts','Rear Delts'].includes(m)) volG['Shoulders'] = (volG['Shoulders'] || 0) + s
       else volG[m] = (volG[m] || 0) + s
     }
+    // Apply beginner cap if needed
+    const capMax = level === 'beginner' ? 14 : Infinity
     for (const muscle of Object.keys(VOL_RANGES)) {
       const range = VOL_RANGES[muscle]
-      let curr = volG[muscle] || 0
-      while (curr > range.max) {
+      const effectiveMax = Math.min(range.max, capMax)
+      // FIX: recompute curr from current exercise state (prevents double-boost/reduce on shared exercises like SQUAT_PATTERN → Quads+Glutes)
+      const _curMS = {};
+      dayData.forEach(d => d.exercises.forEach(e => {
+        if (e.name.includes('Cardio') || e.name.includes('كارديو')) return;
+        (e.primaryMuscles || []).forEach(m => { _curMS[m] = (_curMS[m] || 0) + (parseInt(e.sets) || 3); });
+      }));
+      const _curG = {};
+      for (const [m, s] of Object.entries(_curMS)) {
+        if (['Front Delts','Side Delts','Rear Delts'].includes(m)) _curG['Shoulders'] = (_curG['Shoulders'] || 0) + s;
+        else _curG[m] = (_curG[m] || 0) + s;
+      }
+      let curr = _curG[muscle] || 0
+      while (curr > effectiveMax) {
         let found = false
         for (const d of dayData) for (const e of d.exercises) {
           const pm = e.primaryMuscles || []
@@ -909,10 +970,12 @@ export function generateGymPlan(form) {
     const result = {
       split: splitConfig.name,
       days: dayData,
-      nutrition: nutriMap[goal](bmr, protein, w),
+      nutrition: nutriMap[goal](bmr, protein, w, dailyCalories, fatG, carbG),
       bmr: lang === 'en' ? `${bmr} cal/day` : `${bmr} سعرة/يوم`,
       dailyCalories: lang === 'en' ? `${dailyCalories} cal/day` : `${dailyCalories} سعرة/يوم`,
       protein: lang === 'en' ? `${protein} g/day` : `${protein} جرام/يوم`,
+      fat: lang === 'en' ? `${fatG} g/day` : `${fatG} جرام/يوم`,
+      carbs: lang === 'en' ? `${carbG} g/day` : `${carbG} جرام/يوم`,
       trainingType: lang === 'en'
         ? ({ mma: 'MMA', boxing: 'Boxing', kickboxing: 'Kickboxing', bjj: 'Jiu-Jitsu', muay_thai: 'Muay Thai', taekwondo: 'Taekwondo', karate: 'Karate', wrestling: 'Wrestling', gym: 'Gym (Full Equipment)', general: 'General Fitness' }[trainingType] || 'General Fitness')
         : ({ mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', gym: 'جيم (معدات كاملة)', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة'),
@@ -925,6 +988,7 @@ export function generateGymPlan(form) {
       },
       coachScore: qcResult ? qcResult.coachScore : { total: 60 },
       _qc: qcResult,
+      planSource: 'NORMAL',
     }
     // Final validation report — run hard fail checks one last time
     const finalHF = hardFailValidate(dayData, level, protein, w, splitConfig)
@@ -1034,14 +1098,16 @@ function generateEmergencyPlan(form, lang, w, h, a, days, goal, level, equipList
 
   // Validate and score - if fails, we still return but log error (should not happen with emergency plan)
   const report = validateWorkout(dayData, level)
-  const activityFactor = { fat_loss: 1.2, muscle_gain: 1.55, endurance: 1.55, strength: 1.55, general: 1.4 }[goal] || 1.4
+  const activityFactor = days <= 3 ? 1.55 : days === 4 ? 1.65 : days <= 5 ? 1.725 : 1.9
   const tdee = Math.round(bmr * activityFactor)
   let dailyCalories = tdee
   if (goal === 'fat_loss') dailyCalories = tdee - 500
   else if (goal === 'muscle_gain') dailyCalories = tdee + 300
-  else if (goal === 'strength') dailyCalories = tdee + 100
+  else if (goal === 'strength') dailyCalories = tdee + 200
   if (dailyCalories < bmr) dailyCalories = bmr
-  const qcResult = calculateWorkoutScore({ days: dayData, equipmentList: equipList, level: level, goal: goal, trainingType: trainingType, _weight: w, _bmr: bmr, _dailyCalories: dailyCalories, _protein: protein })
+  const fatG = Math.round((dailyCalories * 0.22) / 9)
+  const carbG = Math.round((dailyCalories - protein * 4 - fatG * 9) / 4)
+  const qcResult = calculateWorkoutScore({ days: dayData, equipmentList: equipList, level: level, goal: goal, trainingType: trainingType, _weight: w, _bmr: bmr, _dailyCalories: dailyCalories, _fat: fatG, _carbs: carbG, _protein: protein })
   
   if (!report.allPassed || qcResult.verdict === 'FAIL') {
     console.error('Emergency plan failed QC:', { report, qcResult })
@@ -1089,10 +1155,12 @@ function generateEmergencyPlan(form, lang, w, h, a, days, goal, level, equipList
   return {
     split,
     days: dayData,
-    nutrition: nutriMap[goal](bmr, protein, w),
+    nutrition: nutriMap[goal](bmr, protein, w, dailyCalories, fatG, carbG),
     bmr: lang === 'en' ? `${bmr} cal/day` : `${bmr} سعرة/يوم`,
     dailyCalories: lang === 'en' ? `${dailyCalories} cal/day` : `${dailyCalories} سعرة/يوم`,
     protein: lang === 'en' ? `${protein} g/day` : `${protein} جرام/يوم`,
+    fat: lang === 'en' ? `${fatG} g/day` : `${fatG} جرام/يوم`,
+    carbs: lang === 'en' ? `${carbG} g/day` : `${carbG} جرام/يوم`,
     trainingType: lang === 'en'
       ? ({ mma: 'MMA', boxing: 'Boxing', kickboxing: 'Kickboxing', bjj: 'Jiu-Jitsu', muay_thai: 'Muay Thai', taekwondo: 'Taekwondo', karate: 'Karate', wrestling: 'Wrestling', gym: 'Gym (Full Equipment)', general: 'General Fitness' }[trainingType] || 'General Fitness')
       : ({ mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', gym: 'جيم (معدات كاملة)', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة'),
@@ -1104,6 +1172,7 @@ function generateEmergencyPlan(form, lang, w, h, a, days, goal, level, equipList
       week4: lang === 'en' ? '+2.5% weight on main compound lifts' : 'إضافة 2.5% من الوزن على التمارين المركبة الرئيسية',
       week5: lang === 'en' ? 'Repeat cycle (back to baseline +2.5%)' : 'إعادة الدورة (العودة للأساس مع زيادة 2.5%)',
     },
+    planSource: 'EMERGENCY',
   }
 }
 
@@ -1177,13 +1246,15 @@ function generateHardcodedEmergencyPlan(form, lang, w, h, a, days, goal, level, 
         'سجل تقدمك أسبوعياً'
       ]
 
-  const activityFactor = { fat_loss: 1.2, muscle_gain: 1.55, endurance: 1.55, strength: 1.55, general: 1.4 }[goal] || 1.4
+  const activityFactor = days <= 3 ? 1.55 : days === 4 ? 1.65 : days <= 5 ? 1.725 : 1.9
   const tdee = Math.round(bmr * activityFactor)
   let dailyCalories = tdee
   if (goal === 'fat_loss') dailyCalories = tdee - 500
   else if (goal === 'muscle_gain') dailyCalories = tdee + 300
-  else if (goal === 'strength') dailyCalories = tdee + 100
+  else if (goal === 'strength') dailyCalories = tdee + 200
   if (dailyCalories < bmr) dailyCalories = bmr
+  const fatG = Math.round((dailyCalories * 0.22) / 9)
+  const carbG = Math.round((dailyCalories - protein * 4 - fatG * 9) / 4)
 
   dayData.forEach(d => {
     d.exercises.forEach(e => {
@@ -1202,10 +1273,12 @@ function generateHardcodedEmergencyPlan(form, lang, w, h, a, days, goal, level, 
   return {
     split,
     days: dayData,
-    nutrition: nutriMap[goal](bmr, protein, w),
+    nutrition: nutriMap[goal](bmr, protein, w, dailyCalories, fatG, carbG),
     bmr: lang === 'en' ? `${bmr} cal/day` : `${bmr} سعرة/يوم`,
     dailyCalories: lang === 'en' ? `${dailyCalories} cal/day` : `${dailyCalories} سعرة/يوم`,
     protein: lang === 'en' ? `${protein} g/day` : `${protein} جرام/يوم`,
+    fat: lang === 'en' ? `${fatG} g/day` : `${fatG} جرام/يوم`,
+    carbs: lang === 'en' ? `${carbG} g/day` : `${carbG} جرام/يوم`,
     trainingType: lang === 'en'
       ? ({ mma: 'MMA', boxing: 'Boxing', kickboxing: 'Kickboxing', bjj: 'Jiu-Jitsu', muay_thai: 'Muay Thai', taekwondo: 'Taekwondo', karate: 'Karate', wrestling: 'Wrestling', gym: 'Gym (Full Equipment)', general: 'General Fitness' }[trainingType] || 'General Fitness')
       : ({ mma: 'MMA', boxing: 'ملاكمة', kickboxing: 'كيك بوكس', bjj: 'جيوجيتسو', muay_thai: 'مواي تاي', taekwondo: 'تاي كون دو', karate: 'كاراتيه', wrestling: 'مصارعة', gym: 'جيم (معدات كاملة)', general: 'لياقة عامة' }[trainingType] || 'لياقة عامة'),
@@ -1219,5 +1292,6 @@ function generateHardcodedEmergencyPlan(form, lang, w, h, a, days, goal, level, 
     },
     _qc: { total: 60, verdict: 'EMERGENCY' },
     debugVersion: "RMA_DEPLOY_TEST_001",
+    planSource: 'HARDCODED_EMERGENCY',
   }
 }

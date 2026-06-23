@@ -26,6 +26,8 @@ const exercisePoolsAR = {
     { name: 'ثني معصم (Wrist Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
     { name: 'ثني معصم عكسي (Reverse Wrist Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
     { name: 'ضرب كرة طبية (Medicine Ball Slams)', cat: 'push', type: 'compound', defSets: 4, defReps: '10-15', defRest: '60 ث' },
+    { name: 'عقلة باب (Door Frame Pull-ups)', cat: 'pull', type: 'compound', defSets: 3, defReps: '8-12', defRest: '60 ث' },
+    { name: 'سحب لات بالمنشفة (Towel Pulldown)', cat: 'pull', type: 'compound', defSets: 3, defReps: '10-15', defRest: '60 ث' },
   ],
   dumbbell: [
     { name: 'دمبل بنش برس (Dumbbell Bench Press)', cat: 'push', type: 'compound', defSets: 4, defReps: '10-12', defRest: '60 ث' },
@@ -80,6 +82,8 @@ const exercisePoolsAR = {
     { name: 'باند تركيز كرل (Band Concentration Curls)', cat: 'pull', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '30 ث' },
     { name: 'باند تمديد ترايسبس علوي (Band Overhead Triceps Extension)', cat: 'push', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
     { name: 'باند ضغط كتف جلوس (Band Seated Shoulder Press)', cat: 'push', type: 'compound', defSets: 4, defReps: '15-20', defRest: '60 ث' },
+    { name: 'باند لات بول داون (Band Lat Pulldown)', cat: 'pull', type: 'compound', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+    { name: 'باند لات عالي (Band High Pulldown)', cat: 'pull', type: 'compound', defSets: 4, defReps: '12-15', defRest: '60 ث' },
   ],
   pullup_bar: [
     { name: 'عقلة واسعة (Pull-ups)', cat: 'pull', type: 'compound', defSets: 4, defReps: '6-12', defRest: '90 ث' },
@@ -172,6 +176,8 @@ const exercisePoolsEN = {
     { name: 'Wrist Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
     { name: 'Reverse Wrist Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '12-15', defRest: '45 ث' },
     { name: 'Medicine Ball Slams', cat: 'push', type: 'compound', defSets: 4, defReps: '10-15', defRest: '60 ث' },
+    { name: 'Door Frame Pull-ups', cat: 'pull', type: 'compound', defSets: 3, defReps: '8-12', defRest: '60 ث' },
+    { name: 'Towel Pulldown', cat: 'pull', type: 'compound', defSets: 3, defReps: '10-15', defRest: '60 ث' },
   ],
   dumbbell: [
     { name: 'Dumbbell Bench Press', cat: 'push', type: 'compound', defSets: 4, defReps: '10-12', defRest: '60 ث' },
@@ -226,6 +232,8 @@ const exercisePoolsEN = {
     { name: 'Band Concentration Curls', cat: 'pull', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '30 ث' },
     { name: 'Band Overhead Triceps Extension', cat: 'push', type: 'isolation', defSets: 3, defReps: '15-20', defRest: '45 ث' },
     { name: 'Band Seated Shoulder Press', cat: 'push', type: 'compound', defSets: 4, defReps: '15-20', defRest: '60 ث' },
+    { name: 'Band Lat Pulldown', cat: 'pull', type: 'compound', defSets: 4, defReps: '12-15', defRest: '60 ث' },
+    { name: 'Band High Pulldown', cat: 'pull', type: 'compound', defSets: 4, defReps: '12-15', defRest: '60 ث' },
   ],
   pullup_bar: [
     { name: 'Pull-ups', cat: 'pull', type: 'compound', defSets: 4, defReps: '6-12', defRest: '90 ث' },
@@ -322,6 +330,7 @@ export function getMovement(ex) {
 
   if (cat === 'pull') {
     if (type === 'isolation') {
+      if (/wrist curl|ثني معصم/.test(n)) return 'FOREARMS'
       if (/curl|بايسبس|باي/.test(n)) return 'BICEPS'
       if (/face pull|rear delt|وجه/.test(n)) return 'REAR_DELT'
       return 'BICEPS'

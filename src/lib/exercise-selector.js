@@ -2,10 +2,22 @@ import { resolveDayTemplate } from './day-templates.js'
 
 function sortCompoundFirst(candidates) {
   return candidates.sort((a, b) => {
-    const order = { compound: 0, isolation: 2 }
-    const aP = order[a.type] ?? 1
-    const bP = order[b.type] ?? 1
-    return aP - bP
+    const getName = (e) => (e.name || '').toLowerCase()
+    const getPrio = (e) => {
+      const n = getName(e)
+      if (e.type !== 'compound') return 99
+      if (/deadlift|رف ميت/.test(n)) return 0
+      if (/(?:^|[^a-z])squat|قرفصاء|سكوات/.test(n) && !/leg press|ليج بريس/.test(n)) return 1
+      if (/bench press|بنش/.test(n)) return 2
+      if (/overhead.?press|shoulder.?press|military.?press|ضغط كتف|ضغط جنب/.test(n)) return 3
+      if (/barbell row|pendlay row|سحب بار|صف بار/.test(n)) return 4
+      if (/pull.?up|lat.?pulldown|عقلة|سحب علوي/.test(n)) return 5
+      if (/leg press|ليج بريس/.test(n)) return 6
+      if (/dip|غطس/.test(n)) return 7
+      if (e.type === 'compound') return 8
+      return 99
+    }
+    return getPrio(a) - getPrio(b)
   })
 }
 
@@ -63,74 +75,74 @@ export function PrescriptionEngine(ex, level, goal) {
   if (isBeginner) {
     switch (cat) {
       case 'COMPOUND_UPPER':
-        reps = '8-12'; sets = '3'; rest = '60-90 ث'
+        reps = '8-12'; sets = '3'; rest = '120 ث'
         break
       case 'COMPOUND_LOWER':
-        reps = '8-10'; sets = '3'; rest = '90-120 ث'
+        reps = '8-10'; sets = '3'; rest = '120 ث'
         break
       case 'ISOLATION':
-        reps = '10-15'; sets = '2'; rest = '30-60 ث'
+        reps = '10-15'; sets = '2'; rest = '60 ث'
         break
       case 'ABS':
-        reps = '12-20'; sets = '3'; rest = '30 ث'
+        reps = '12-20'; sets = '3'; rest = '45 ث'
         break
       case 'CALVES':
-        reps = '12-20'; sets = '3'; rest = '30-45 ث'
+        reps = '12-20'; sets = '3'; rest = '45 ث'
         break
     }
   } else if (isIntermediate) {
     switch (cat) {
       case 'COMPOUND_UPPER':
-        reps = '6-10'; sets = '4'; rest = '90-180 ث'
+        reps = '6-10'; sets = '4'; rest = '120 ث'
         break
       case 'COMPOUND_LOWER':
-        reps = '6-10'; sets = '4'; rest = '90-180 ث'
+        reps = '6-10'; sets = '4'; rest = '120 ث'
         break
       case 'ISOLATION':
-        reps = '10-15'; sets = '3-4'; rest = '30-60 ث'
+        reps = '10-15'; sets = '3-4'; rest = '60 ث'
         break
       case 'ABS':
-        reps = '12-20'; sets = '3-4'; rest = '30-45 ث'
+        reps = '12-20'; sets = '3-4'; rest = '45 ث'
         break
       case 'CALVES':
-        reps = '12-20'; sets = '3-4'; rest = '30-45 ث'
+        reps = '12-20'; sets = '3-4'; rest = '45 ث'
         break
     }
   } else if (isAdvanced) {
     if (isStrength) {
       switch (cat) {
         case 'COMPOUND_UPPER':
-          reps = '3-6'; sets = '4-5'; rest = '120-180 ث'
+          reps = '3-6'; sets = '4-5'; rest = '150 ث'
           break
         case 'COMPOUND_LOWER':
-          reps = '3-6'; sets = '4-5'; rest = '120-180 ث'
+          reps = '3-6'; sets = '4-5'; rest = '150 ث'
           break
         case 'ISOLATION':
-          reps = '8-15'; sets = '3-4'; rest = '30-60 ث'
+          reps = '8-15'; sets = '3-4'; rest = '60 ث'
           break
         case 'ABS':
-          reps = '8-15'; sets = '3-4'; rest = '30-45 ث'
+          reps = '8-15'; sets = '3-4'; rest = '45 ث'
           break
         case 'CALVES':
-          reps = '8-15'; sets = '3-4'; rest = '30-45 ث'
+          reps = '8-15'; sets = '3-4'; rest = '45 ث'
           break
       }
     } else {
       switch (cat) {
         case 'COMPOUND_UPPER':
-          reps = '6-12'; sets = '3-4'; rest = '90-180 ث'
+          reps = '6-12'; sets = '3-4'; rest = '120 ث'
           break
         case 'COMPOUND_LOWER':
-          reps = '6-12'; sets = '3-4'; rest = '90-180 ث'
+          reps = '6-12'; sets = '3-4'; rest = '120 ث'
           break
         case 'ISOLATION':
-          reps = '8-15'; sets = '3-4'; rest = '30-60 ث'
+          reps = '8-15'; sets = '3-4'; rest = '60 ث'
           break
         case 'ABS':
-          reps = '8-15'; sets = '3-4'; rest = '30-45 ث'
+          reps = '8-15'; sets = '3-4'; rest = '45 ث'
           break
         case 'CALVES':
-          reps = '8-15'; sets = '3-4'; rest = '30-45 ث'
+          reps = '8-15'; sets = '3-4'; rest = '45 ث'
           break
       }
     }

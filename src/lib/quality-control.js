@@ -1,5 +1,38 @@
 import { parseMaxRep, parseMinRest } from './exercise-selector.js'
 
+// ===== SINGLE SOURCE OF TRUTH: Volume limits used by both QC and generator =====
+export const VOLUME_LIMITS = {
+  perMuscle: {
+    Chest: { min: 10, max: 20 },
+    Back: { min: 12, max: 22 },
+    Shoulders: { min: 10, max: 20 },
+    Quads: { min: 10, max: 18 },
+    Hamstrings: { min: 8, max: 16 },
+    Glutes: { min: 6, max: 16 },
+    Biceps: { min: 8, max: 16 },
+    Triceps: { min: 8, max: 16 },
+    Calves: { min: 6, max: 15 },
+    Abs: { min: 6, max: 15 },
+  },
+  perMuscleGrouped: {
+    Chest: { min: 10, max: 20 },
+    Back: { min: 12, max: 22 },
+    Shoulders: { min: 10, max: 20 },
+    'Front Delts': { min: 10, max: 20, group: 'Shoulders' },
+    'Side Delts': { min: 10, max: 20, group: 'Shoulders' },
+    'Rear Delts': { min: 10, max: 20, group: 'Shoulders' },
+    Quads: { min: 10, max: 18 },
+    Hamstrings: { min: 8, max: 16 },
+    Glutes: { min: 6, max: 16 },
+    Biceps: { min: 8, max: 16 },
+    Triceps: { min: 8, max: 16 },
+    Calves: { min: 6, max: 15 },
+    Abs: { min: 6, max: 15 },
+  },
+  beginnerMaxSetsPerMuscle: 14,
+}
+// =====================================================================
+
 export function calculateWorkoutScore(plan) {
   const days = plan.days || []
   const equipList = plan.equipmentList || plan._equipmentList || []
@@ -10,10 +43,10 @@ export function calculateWorkoutScore(plan) {
   const splitType = detectSplitType(days)
   if (level === 'beginner' && (splitType === 'pplUpperLower' || splitType === 'pplUpperLowerArms' || splitType === 'PPL')) {
     console.log('BEGINNER_SPLIT_FAIL: beginner cannot use PPL split')
-    return { total: 0, split: { passed: false }, movement: { passed: false }, duplicate: { passed: false }, muscle: { passed: false, present: [], missing: [] }, equipment: { passed: false }, realSquat: { found: false }, pushDiversity: { passed: true, violations: [] }, upperDayCheck: { passed: true, violations: [] }, pullDayVolume: { passed: true }, lateralRaiseFreq: { passed: true }, weeklyVolume: { details: [], penalty: 0 }, fullBodyCheck: { passed: true, violations: [] }, coachScore: { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }, splitType, verdict: 'FAIL', coachVerdict: 'REGENERATE' }
+    return { total: 0, split: { passed: false }, movement: { score: 0, found: { pushPattern: false, pullPattern: false, squatPattern: false, hipHinge: false, core: false, calves: false } }, duplicate: { passed: false }, muscle: { passed: false, present: [], missing: [] }, equipment: { passed: false }, realSquat: { found: false }, pushDiversity: { passed: true, violations: [] }, upperDayCheck: { passed: true, violations: [] }, pullDayVolume: { passed: true }, lateralRaiseFreq: { passed: true }, weeklyVolume: { details: [], penalty: 0 }, fullBodyCheck: { passed: true, violations: [] }, coachScore: { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }, splitType, verdict: 'FAIL', coachVerdict: 'REGENERATE' }
   }
 
-  // Hard fail: beginner weekly sets per muscle > 14
+  // Hard fail: beginner weekly sets per muscle (safety net — VolumeBalancer handles primary cap at 14)
   if (level === 'beginner') {
     const muscleSets = {}
     days.forEach(d => {
@@ -25,10 +58,14 @@ export function calculateWorkoutScore(plan) {
         })
       })
     })
-    const overLimit = Object.entries(muscleSets).filter(([m, s]) => s > 14)
+    // Use VOLUME_RANGES max as safety threshold (VolumeBalancer caps at 14 for beginners)
+    const overLimit = Object.entries(muscleSets).filter(([m, s]) => {
+      const range = VOLUME_LIMITS.perMuscleGrouped[m]
+      return s > (range ? range.max : VOLUME_LIMITS.beginnerMaxSetsPerMuscle)
+    })
     if (overLimit.length > 0) {
-      console.log('BEGINNER_VOLUME_FAIL: beginner weekly sets > 14 for', overLimit.map(([m, s]) => `${m} ${s}s`).join(', '))
-      return { total: 0, split: { passed: false }, movement: { passed: false }, duplicate: { passed: false }, muscle: { passed: false, present: [], missing: [] }, equipment: { passed: false }, realSquat: { found: false }, pushDiversity: { passed: true, violations: [] }, upperDayCheck: { passed: true, violations: [] }, pullDayVolume: { passed: true }, lateralRaiseFreq: { passed: true }, weeklyVolume: { details: [], penalty: 0 }, fullBodyCheck: { passed: true, violations: [] }, coachScore: { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }, splitType, verdict: 'FAIL', coachVerdict: 'REGENERATE' }
+      console.log('BEGINNER_VOLUME_FAIL: beginner sets exceed VOLUME_RANGES for', overLimit.map(([m, s]) => `${m} ${s}s`).join(', '))
+      return { total: 0, split: { passed: false }, movement: { score: 0, found: { pushPattern: false, pullPattern: false, squatPattern: false, hipHinge: false, core: false, calves: false } }, duplicate: { passed: false }, muscle: { passed: false, present: [], missing: [] }, equipment: { passed: false }, realSquat: { found: false }, pushDiversity: { passed: true, violations: [] }, upperDayCheck: { passed: true, violations: [] }, pullDayVolume: { passed: true }, lateralRaiseFreq: { passed: true }, weeklyVolume: { details: [], penalty: 0 }, fullBodyCheck: { passed: true, violations: [] }, coachScore: { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }, splitType, verdict: 'FAIL', coachVerdict: 'REGENERATE' }
     }
   }
 
@@ -37,14 +74,14 @@ export function calculateWorkoutScore(plan) {
   const weight = plan._weight || 0
   if (protein > 0 && weight > 0 && protein > Math.round(weight * 2.2)) {
     console.log('PROTEIN_FAIL: protein', protein, 'g exceeds 2.2 g/kg for weight', weight)
-    return { total: 0, split: { passed: false }, movement: { passed: false }, duplicate: { passed: false }, muscle: { passed: false, present: [], missing: [] }, equipment: { passed: false }, realSquat: { found: false }, pushDiversity: { passed: true, violations: [] }, upperDayCheck: { passed: true, violations: [] }, pullDayVolume: { passed: true }, lateralRaiseFreq: { passed: true }, weeklyVolume: { details: [], penalty: 0 }, fullBodyCheck: { passed: true, violations: [] }, coachScore: { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }, splitType, verdict: 'FAIL', coachVerdict: 'REGENERATE' }
+    return { total: 0, split: { passed: false }, movement: { score: 0, found: { pushPattern: false, pullPattern: false, squatPattern: false, hipHinge: false, core: false, calves: false } }, duplicate: { passed: false }, muscle: { passed: false, present: [], missing: [] }, equipment: { passed: false }, realSquat: { found: false }, pushDiversity: { passed: true, violations: [] }, upperDayCheck: { passed: true, violations: [] }, pullDayVolume: { passed: true }, lateralRaiseFreq: { passed: true }, weeklyVolume: { details: [], penalty: 0 }, fullBodyCheck: { passed: true, violations: [] }, coachScore: { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }, splitType, verdict: 'FAIL', coachVerdict: 'REGENERATE' }
   }
 
   // Hard fail: displayed sets contain "-" (ranges not resolved) — skip cardio
   const hasRangeSets = days.some(d => d.exercises.some(e => !e.name.includes('Cardio') && !e.name.includes('كارديو') && e.sets && typeof e.sets === 'string' && e.sets.includes('-')))
   if (hasRangeSets) {
     console.log('SETS_RANGE_FAIL: displayed sets contain range (-)')
-    return { total: 0, split: { passed: false }, movement: { passed: false }, duplicate: { passed: false }, muscle: { passed: false, present: [], missing: [] }, equipment: { passed: false }, realSquat: { found: false }, pushDiversity: { passed: true, violations: [] }, upperDayCheck: { passed: true, violations: [] }, pullDayVolume: { passed: true }, lateralRaiseFreq: { passed: true }, weeklyVolume: { details: [], penalty: 0 }, fullBodyCheck: { passed: true, violations: [] }, coachScore: { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }, splitType, verdict: 'FAIL', coachVerdict: 'REGENERATE' }
+    return { total: 0, split: { passed: false }, movement: { score: 0, found: { pushPattern: false, pullPattern: false, squatPattern: false, hipHinge: false, core: false, calves: false } }, duplicate: { passed: false }, muscle: { passed: false, present: [], missing: [] }, equipment: { passed: false }, realSquat: { found: false }, pushDiversity: { passed: true, violations: [] }, upperDayCheck: { passed: true, violations: [] }, pullDayVolume: { passed: true }, lateralRaiseFreq: { passed: true }, weeklyVolume: { details: [], penalty: 0 }, fullBodyCheck: { passed: true, violations: [] }, coachScore: { total: 0, balance: 0, recovery: 0, quality: 0, progression: 0, specificity: 0 }, splitType, verdict: 'FAIL', coachVerdict: 'REGENERATE' }
   }
 
   const split = checkSplitValidation(days)
@@ -100,7 +137,7 @@ export function calculateWorkoutScore(plan) {
   const lateralRaiseFreq = checkLateralRaiseFrequency(days)
 
   // Weekly Muscle Volume Validation: -10 per muscle out of range
-  const weeklyVolume = checkWeeklyMuscleVolume(days)
+  const weeklyVolume = checkWeeklyMuscleVolume(days, level)
   let volumePenalty = 0
   const volumeViolations = weeklyVolume.filter(v => !v.inRange)
   volumePenalty = volumeViolations.length * -10
@@ -577,7 +614,8 @@ function checkMuscleCoverage(days) {
 }
 
 // ---------- 5. Equipment Validation (20 pts) ----------
-const GYM_EQUIPMENT = ['barbell', 'dumbbell', 'cable', 'gym_machine', 'pullup_bar', 'smith_machine', 'leg_press', 'lat_pulldown']
+// Only equipment EXCLUSIVE to commercial gyms — dumbbell/kettlebell/bench/step are home-compatible
+const GYM_EQUIPMENT = ['barbell', 'cable', 'gym_machine', 'pullup_bar', 'smith_machine', 'leg_press', 'lat_pulldown']
 
 function checkEquipmentQC(plan) {
   const equipList = plan.equipmentList || plan._equipmentList || []
@@ -767,21 +805,9 @@ function checkLateralRaiseFrequency(days) {
 }
 
 // ---------- 11. Weekly Muscle Volume Validation ----------
-const VOLUME_RANGES = {
-  Chest: { min: 10, max: 20 },
-  Back: { min: 12, max: 22 },
-  'Front Delts': { min: 10, max: 20, group: 'Shoulders' },
-  'Side Delts': { min: 10, max: 20, group: 'Shoulders' },
-  'Rear Delts': { min: 10, max: 20, group: 'Shoulders' },
-  Quads: { min: 10, max: 18 },
-  Hamstrings: { min: 8, max: 16 },
-  Biceps: { min: 8, max: 16 },
-  Triceps: { min: 8, max: 16 },
-  Calves: { min: 6, max: 15 },
-  Abs: { min: 6, max: 15 },
-}
+const VOLUME_RANGES = VOLUME_LIMITS.perMuscleGrouped
 
-function checkWeeklyMuscleVolume(days) {
+function checkWeeklyMuscleVolume(days, level) {
   const muscleSets = {}
   days.forEach(d => {
     d.exercises.forEach(e => {
@@ -804,12 +830,16 @@ function checkWeeklyMuscleVolume(days) {
     }
   }
 
+  // Apply beginner cap to max (same cap used by VolumeBalancer)
+  const capMax = level === 'beginner' ? 14 : Infinity
+
   const results = []
   for (const [muscle, sets] of Object.entries(grouped)) {
     const range = VOLUME_RANGES[muscle]
     if (range) {
-      const inRange = sets >= range.min && sets <= range.max
-      results.push({ muscle, sets, min: range.min, max: range.max, inRange })
+      const effectiveMax = Math.min(range.max, capMax)
+      const inRange = sets >= range.min && sets <= effectiveMax
+      results.push({ muscle, sets, min: range.min, max: effectiveMax, inRange })
     }
   }
   return results
@@ -829,8 +859,8 @@ function checkArmsDay(days) {
       if (e.name.includes('Cardio') || e.name.includes('كارديو')) return
       const mov = e.movementPattern || e.mov || ''
       const n = e.name.toLowerCase()
-      if (mov === 'BICEPS' || /curl/i.test(n) || mov === 'Bicep Curl') bicepsCount++
-      if (mov === 'TRICEPS' || /triceps/i.test(n) || /skull crusher|pushdown|extension/i.test(n) || mov === 'Triceps Extension') tricepsCount++
+      if (mov === 'BICEPS' || mov === 'Bicep Curl' || (/curl/i.test(n) && !/wrist/i.test(n))) bicepsCount++
+      if (mov === 'TRICEPS' || mov === 'Triceps Extension' || /triceps|skull crusher|pushdown|extension/i.test(n)) tricepsCount++
       if (mov === 'LATERAL_RAISE' || /lateral raise|جانبي/i.test(n)) lateralRaiseCount++
       if (mov === 'REAR_DELT' || /rear delt/i.test(n)) rearDeltCount++
       if (mov === 'LATERAL_RAISE' || mov === 'REAR_DELT') {

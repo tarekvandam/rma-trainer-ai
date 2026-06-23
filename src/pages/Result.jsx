@@ -50,6 +50,20 @@ export default function Result() {
 {JSON.stringify(result._debug, null, 2)}
         </pre>
       )}
+      {result?.planSource && (
+        <div className={`rounded-lg border p-3 text-center text-sm font-bold ${
+          result.planSource === 'NORMAL'
+            ? 'border-green-600 bg-green-900/40 text-green-300'
+            : result.planSource === 'EMERGENCY'
+            ? 'border-yellow-600 bg-yellow-900/40 text-yellow-300'
+            : 'border-red-600 bg-red-900/40 text-red-300'
+        }`}>
+          PLAN SOURCE: {result.planSource}
+          {result.planSource !== 'NORMAL' && (
+            <span className="ml-2 text-xs font-normal opacity-70">(normal generation failed — fallback plan)</span>
+          )}
+        </div>
+      )}
       {debugVersion && (
         <div className="rounded-lg border border-yellow-600 bg-yellow-900/40 p-3 text-center text-sm font-bold text-yellow-300">
           DEBUG VERSION: {debugVersion}
