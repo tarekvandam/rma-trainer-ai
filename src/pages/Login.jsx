@@ -53,6 +53,20 @@ export default function Login() {
             </Link>
           )}
 
+          {!isSignUp && (
+            <button
+              onClick={() => {
+                localSignUp('eng.tarek.sayed@gmail.com', 'admin123')
+                const { error } = localSignIn('eng.tarek.sayed@gmail.com', 'admin123')
+                if (error) setMsg(error.message)
+                else { setSuccess(true); setMsg('تم تسجيل الدخول'); setTimeout(() => navigate('/'), 500) }
+              }}
+              className="block w-full cursor-pointer rounded-lg bg-zinc-800 px-4 py-2 text-center text-sm text-zinc-400 transition hover:bg-zinc-700"
+            >
+              🛠 دخول سريع (admin)
+            </button>
+          )}
+
           <button
             onClick={() => setIsSignUp(!isSignUp)}
             className="block w-full text-center text-sm text-zinc-400 underline transition hover:text-zinc-200"
