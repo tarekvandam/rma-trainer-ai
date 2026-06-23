@@ -1,9 +1,12 @@
-export const PUSH_DAY = ['CHEST_COMPOUND', 'CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'CHEST_ISOLATION', 'LATERAL_RAISE', 'TRICEPS']
-export const PULL_DAY = ['VERTICAL_PULL', 'HORIZONTAL_PULL', 'BACK_ACCESSORY', 'REAR_DELT', 'BICEPS', 'BICEPS']
+export const PUSH_DAY = ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'CHEST_ISOLATION', 'LATERAL_RAISE', 'TRICEPS']
+export const PULL_DAY = ['VERTICAL_PULL', 'HORIZONTAL_PULL', 'BACK_ACCESSORY', 'REAR_DELT', 'BICEPS']
 export const LEG_DAY = ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS']
 export const UPPER_DAY = ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'HORIZONTAL_PULL', 'VERTICAL_PULL', 'LATERAL_RAISE', 'BICEPS', 'TRICEPS']
 export const LOWER_DAY = ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS']
-export const ARMS_DAY = ['BICEPS', 'TRICEPS', 'REAR_DELT', 'LATERAL_RAISE', 'FOREARMS', 'GRIP', 'ABS']
+export const ARMS_DAY = ['BICEPS', 'TRICEPS', 'REAR_DELT', 'LATERAL_RAISE', 'ABS']
+export const FULL_A = ['SQUAT_PATTERN', 'CHEST_COMPOUND', 'HORIZONTAL_PULL', 'SHOULDER_COMPOUND', 'BICEPS', 'TRICEPS']
+export const FULL_B = ['HIP_HINGE', 'CHEST_COMPOUND', 'VERTICAL_PULL', 'LATERAL_RAISE', 'BICEPS', 'TRICEPS']
+export const FULL_C = ['SQUAT_PATTERN', 'CHEST_COMPOUND', 'HORIZONTAL_PULL', 'SHOULDER_COMPOUND', 'BICEPS', 'ABS']
 
 export const DAY_TEMPLATES = {
   push: { structure: PUSH_DAY },
@@ -61,14 +64,7 @@ export function resolveDayTemplate(focusText, lang, trainingType = 'gym') {
   if (armsKw.some(k => ft.includes(k))) return DAY_TEMPLATES.arms
 
   if (ft.includes('full') || ft.includes('كامل')) {
-    if (trainingType === 'home') {
-      return {
-        structure: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'HORIZONTAL_PULL', 'SQUAT_PATTERN', 'HIP_HINGE', 'BICEPS', 'TRICEPS'],
-      }
-    }
-    return {
-      structure: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'VERTICAL_PULL', 'HORIZONTAL_PULL', 'SQUAT_PATTERN', 'HIP_HINGE', 'CHEST_ISOLATION', 'BICEPS', 'TRICEPS', 'ABS'],
-    }
+    return { structure: FULL_A }
   }
   return DAY_TEMPLATES.push
 }

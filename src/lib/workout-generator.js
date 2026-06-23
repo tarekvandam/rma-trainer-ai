@@ -42,14 +42,22 @@ function generalCardioOptions(lang, goal) {
 
 // Movement Patterns defined per day type (exact spec from user)
 const MOVEMENT_PATTERNS = {
-  push: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'CHEST_ISOLATION', 'LATERAL_RAISE', 'TRICEPS', 'TRICEPS'],
-  pull: ['VERTICAL_PULL', 'HORIZONTAL_PULL', 'BACK_ACCESSORY', 'REAR_DELT', 'BICEPS', 'BICEPS'],
+  push: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'CHEST_ISOLATION', 'LATERAL_RAISE', 'TRICEPS'],
+  pull: ['VERTICAL_PULL', 'HORIZONTAL_PULL', 'BACK_ACCESSORY', 'REAR_DELT', 'BICEPS'],
   legs: ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS'],
   upper: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'HORIZONTAL_PULL', 'VERTICAL_PULL', 'LATERAL_RAISE', 'BICEPS', 'TRICEPS'],
   lower: ['SQUAT_PATTERN', 'HIP_HINGE', 'QUAD_ISOLATION', 'HAMSTRING', 'CALVES', 'ABS'],
-  arms: ['BICEPS', 'BICEPS', 'TRICEPS', 'TRICEPS', 'REAR_DELT', 'LATERAL_RAISE', 'ABS'],
-  fullBody: ['CHEST_COMPOUND', 'SHOULDER_COMPOUND', 'VERTICAL_PULL', 'HORIZONTAL_PULL', 'SQUAT_PATTERN', 'HIP_HINGE', 'CHEST_ISOLATION', 'BICEPS', 'TRICEPS', 'ABS'],
-  fullBodyBeginner: ['CHEST_COMPOUND', 'VERTICAL_PULL', 'SQUAT_PATTERN', 'BICEPS', 'TRICEPS', 'ABS', 'LATERAL_RAISE'],
+  arms: ['BICEPS', 'TRICEPS', 'REAR_DELT', 'LATERAL_RAISE', 'ABS'],
+  fullBodyA: ['SQUAT_PATTERN', 'CHEST_COMPOUND', 'HORIZONTAL_PULL', 'SHOULDER_COMPOUND', 'BICEPS', 'TRICEPS'],
+  fullBodyB: ['HIP_HINGE', 'CHEST_COMPOUND', 'VERTICAL_PULL', 'LATERAL_RAISE', 'BICEPS', 'TRICEPS'],
+  fullBodyC: ['SQUAT_PATTERN', 'CHEST_COMPOUND', 'HORIZONTAL_PULL', 'SHOULDER_COMPOUND', 'BICEPS', 'ABS'],
+  fullBodyBeginner: ['SQUAT_PATTERN', 'CHEST_COMPOUND', 'VERTICAL_PULL', 'LATERAL_RAISE', 'BICEPS'],
+}
+
+function buildFullBodyPatterns(days, level) {
+  if (level === 'beginner') return Array(days).fill(MOVEMENT_PATTERNS.fullBodyBeginner)
+  const variants = [MOVEMENT_PATTERNS.fullBodyA, MOVEMENT_PATTERNS.fullBodyB, MOVEMENT_PATTERNS.fullBodyC]
+  return Array.from({ length: days }, (_, i) => variants[i % variants.length])
 }
 
 /**
@@ -68,11 +76,11 @@ export function SplitSelector(form) {
   if (!isGym) {
     const name = lang === 'en' ? `Full Body — ${days}-Day Full Body` : `Full Body — ${days} أيام كامل للجسم`
     const focus = lang === 'en' ? 'Full Body' : 'تمارين كاملة للجسم'
-    const pattern = level === 'beginner' ? MOVEMENT_PATTERNS.fullBodyBeginner : MOVEMENT_PATTERNS.fullBody
+    const patterns = buildFullBodyPatterns(days, level)
     return {
       name,
       dayFocuses: Array(days).fill(focus),
-      patterns: Array(days).fill(pattern),
+      patterns,
       splitType: 'fullBody',
     }
   }
@@ -84,11 +92,11 @@ export function SplitSelector(form) {
     // Full Body
     const name = lang === 'en' ? `Full Body — ${days}-Day Full Body` : `Full Body — ${days} أيام كامل للجسم`
     const focus = lang === 'en' ? 'Full Body' : 'تمارين كاملة للجسم'
-    const pattern = level === 'beginner' ? MOVEMENT_PATTERNS.fullBodyBeginner : MOVEMENT_PATTERNS.fullBody
+    const patterns = buildFullBodyPatterns(days, level)
     return {
       name,
       dayFocuses: Array(days).fill(focus),
-      patterns: Array(days).fill(pattern),
+      patterns,
       splitType: 'fullBody',
     }
   }
@@ -140,7 +148,7 @@ export function SplitSelector(form) {
         patterns.push(MOVEMENT_PATTERNS.lower)
       } else {
         dayFocuses.push(lang === 'en' ? 'Full Body' : 'كامل للجسم')
-        patterns.push(MOVEMENT_PATTERNS.fullBody)
+        patterns.push(MOVEMENT_PATTERNS.fullBodyA)
       }
     }
     return { name, dayFocuses, patterns, splitType: 'upperLower' }
@@ -262,6 +270,25 @@ export function WorkoutBuilder(form, pool, dayFocuses, patterns, globalUsedNames
     const title = lang === 'en'
       ? `Day ${nums[i + 1] || (i + 1)} — ${focusText}`
       : `اليوم ${nums[i + 1] || (i + 1)} — ${focusText}`
+
+    // Global sort across all exercises in the day: heavy compound first
+    exercises.sort((a, b) => {
+      const getName = (e) => (e.name || '').toLowerCase()
+      const getPrio = (e) => {
+        if (e.type !== 'compound') return 99
+        const n = getName(e)
+        if (/deadlift|رف ميت/.test(n)) return 0
+        if (/(?:^|[^a-z])squat|قرفصاء|سكوات/.test(n) && !/leg press|ليج بريس/.test(n)) return 1
+        if (/bench press|بنش/.test(n)) return 2
+        if (/overhead.?press|shoulder.?press|مilitar/.test(n) || /ضغط كتف|ضغط جنب/.test(n)) return 3
+        if (/barbell row|pendlay row|سحب بار|صف بار/.test(n)) return 4
+        if (/pull.?up|lat.?pulldown|عقلة|سحب علوي/.test(n)) return 5
+        if (/leg press|ليج بريس/.test(n)) return 6
+        if (/dip|غطس/.test(n)) return 7
+        return 8
+      }
+      return getPrio(a) - getPrio(b)
+    })
 
     dayData.push({
       day: title,
